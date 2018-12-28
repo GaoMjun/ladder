@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"sync"
+
+	"golang.org/x/crypto/ssh"
 )
 
 type BackEnd struct {
@@ -40,8 +42,14 @@ func (self *Channels) CreateStream() (stream io.ReadWriteCloser, err error) {
 		err = errors.New("no backend")
 		return
 	}
-	stream = e.Value.(io.ReadWriteCloser)
 	self.backends.MoveToFront(e)
+
+	conn := e.Value.(ssh.Conn)
+	stream, reqs, err := conn.OpenChannel("", []byte{})
+	if err != nil {
+		return
+	}
+	go ssh.DiscardRequests(reqs)
 	return
 }
 

@@ -19,7 +19,7 @@ func main() {
 		conn *websocket.Conn
 
 		tcpServer *TCPServer
-		channels  = &ladder.Channels{}
+		channels  = ladder.NewChannels()
 	)
 	defer func() {
 		if err != nil {
@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 
-	handleConn(ladder.NewConn(conn), channels)
+	go handleConn(ladder.NewConn(conn), channels)
 
 	tcpServer = NewTCPServer("127.0.0.1:9999", channels)
 	err = tcpServer.Run()
