@@ -32,7 +32,7 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		go func() {
-			conn, _, err = websocket.DefaultDialer.Dial("ws://192.168.1.57:8888/", header)
+			conn, _, err = websocket.DefaultDialer.Dial("ws://127.0.0.1:8888/", header)
 			if err != nil {
 				return
 			}

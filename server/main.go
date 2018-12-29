@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -28,14 +29,28 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 	)
+	defer func() {
+		if err != nil {
+			handleFake(w, r)
+			log.Println(err)
+		}
+	}()
 
 	token = r.Header.Get("token")
-	log.Println(token)
+	if len(token) <= 0 {
+		err = errors.New("token invalid")
+		return
+	}
+
 	tokenOk, err = ladder.CheckToken("fuck", "gfw", token)
 	if err != nil {
 		return
 	}
-	log.Println(tokenOk)
+
+	if tokenOk != true {
+		err = errors.New("token invalid")
+		return
+	}
 
 	conn, err = upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -43,4 +58,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	handleConn(ladder.NewConn(conn))
+}
+
+func handleFake(w http.ResponseWriter, r *http.Request) {
+	w.Write(index)
 }
