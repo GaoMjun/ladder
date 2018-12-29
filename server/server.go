@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/GaoMjun/ladder"
 	"golang.org/x/crypto/ssh"
@@ -31,11 +32,10 @@ func handleConn(conn *ladder.Conn) {
 
 	config, err = generateServerConfig(func(c ssh.ConnMetadata, pass []byte) (perm *ssh.Permissions, err error) {
 		var (
-			user    = c.User()
-			passwd  = string(pass)
-			session = string(c.SessionID())
+			user   = c.User()
+			passwd = string(pass)
+			// session = string(c.SessionID())
 		)
-		log.Println(user, passwd, session)
 		if user == "fuck" && passwd == "gfw" {
 			return
 		}
@@ -51,7 +51,6 @@ func handleConn(conn *ladder.Conn) {
 	if err != nil {
 		return
 	}
-	log.Println(sshConn.SessionID())
 
 	go handleChannels(chans)
 	handleRequests(reqs)
@@ -86,12 +85,14 @@ func handleStream(stream ssh.Channel) {
 		err     error
 		request *Request
 		address string
-		server  net.Conn
+		conn    net.Conn
+		remote  *ladder.ConnWithTimeout
+		dialer  = &net.Dialer{Timeout: time.Second * 3}
 	)
 	defer func() {
 		stream.Close()
-		if server != nil {
-			server.Close()
+		if remote != nil {
+			remote.Close()
 		}
 		if err != nil {
 			log.Println(err)
@@ -109,16 +110,17 @@ func handleStream(stream ssh.Channel) {
 	}
 	log.Println(address)
 
-	server, err = net.Dial("tcp", address)
+	conn, err = dialer.Dial("tcp", address)
 	if err != nil {
 		return
 	}
+	remote = ladder.NewConnWithTimeout(conn)
 
 	if request.HttpRequest.Method == "CONNECT" {
 		fmt.Fprint(stream, "HTTP/1.1 200 Connection established\r\n\r\n")
 	} else {
-		server.Write(request.Bytes())
+		remote.Write(request.Bytes())
 	}
 
-	ladder.Pipe(stream, server)
+	ladder.Pipe(stream, remote)
 }

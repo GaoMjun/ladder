@@ -3,26 +3,22 @@ package ladder
 import (
 	"container/list"
 	"errors"
-	"io"
 	"sync"
-
-	"golang.org/x/crypto/ssh"
 )
 
 type BackEnd struct {
-	v interface{}
+	V interface{}
 	e *list.Element
 }
 
 func NewBackEnd(v interface{}) (be *BackEnd) {
 	be = &BackEnd{}
-	be.v = v
+	be.V = v
 	return
 }
 
 type Channels struct {
 	backends *list.List
-	index    uint
 	locker   *sync.RWMutex
 }
 
@@ -33,23 +29,18 @@ func NewChannels() (cs *Channels) {
 	return
 }
 
-func (self *Channels) CreateStream() (stream io.ReadWriteCloser, err error) {
+func (self *Channels) GetBackEnd() (be *BackEnd, err error) {
 	self.locker.Lock()
 	defer self.locker.Unlock()
 
 	e := self.backends.Back()
-	if e != nil {
+	if e == nil {
 		err = errors.New("no backend")
 		return
 	}
 	self.backends.MoveToFront(e)
 
-	conn := e.Value.(ssh.Conn)
-	stream, reqs, err := conn.OpenChannel("", []byte{})
-	if err != nil {
-		return
-	}
-	go ssh.DiscardRequests(reqs)
+	be = e.Value.(*BackEnd)
 	return
 }
 

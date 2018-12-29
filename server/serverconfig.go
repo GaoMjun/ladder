@@ -17,6 +17,7 @@ func generateServerConfig(authFunc func(ssh.ConnMetadata, []byte) (*ssh.Permissi
 
 	config = &ssh.ServerConfig{
 		PasswordCallback: authFunc,
+		ServerVersion:    "SSH-2.0-ladder-1.0.0",
 	}
 
 	key, err = generateKey()

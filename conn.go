@@ -28,13 +28,14 @@ func (self *Conn) Read(buf []byte) (n int, err error) {
 
 	if len(self.buffer) > 0 {
 		if len(self.buffer) <= len(buf) {
-			buf = self.buffer
-			n = len(self.buffer)
-		} else {
-			buf = self.buffer[:len(buf)]
-			n = len(buf)
-			self.buffer = self.buffer[len(buf):]
+			n = copy(buf, self.buffer)
+			self.buffer = []byte{}
+			return
 		}
+
+		n = copy(buf, self.buffer)
+		self.buffer = self.buffer[n:]
+		return
 	}
 
 	t, msg, err = self.wsConn.ReadMessage()
@@ -48,13 +49,12 @@ func (self *Conn) Read(buf []byte) (n int, err error) {
 
 	size = len(msg)
 	if size <= len(buf) {
-		buf = msg[:size]
-		n = size
-	} else {
-		buf = msg[:len(buf)]
-		n = len(buf)
-		self.buffer = msg[len(buf):]
+		n = copy(buf, msg)
+		return
 	}
+
+	n = copy(buf, msg)
+	self.buffer = msg[n:]
 	return
 }
 

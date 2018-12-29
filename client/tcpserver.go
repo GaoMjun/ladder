@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/GaoMjun/ladder"
+	"golang.org/x/crypto/ssh"
 )
 
 type TCPServer struct {
@@ -44,8 +45,10 @@ func (self *TCPServer) Run() (err error) {
 
 func (self *TCPServer) handleConn(conn net.Conn) {
 	var (
-		err    error
-		stream io.ReadWriteCloser
+		err     error
+		stream  io.ReadWriteCloser
+		be      *ladder.BackEnd
+		sshConn ssh.Conn
 	)
 	defer func() {
 		conn.Close()
@@ -57,10 +60,17 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 		}
 	}()
 
-	stream, err = self.channels.CreateStream()
+	be, err = self.channels.GetBackEnd()
 	if err != nil {
 		return
 	}
+
+	sshConn = be.V.(ssh.Conn)
+	stream, reqs, err := sshConn.OpenChannel("", []byte{})
+	if err != nil {
+		return
+	}
+	go ssh.DiscardRequests(reqs)
 
 	ladder.Pipe(conn, stream)
 }
