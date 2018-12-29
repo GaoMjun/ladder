@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile)
+}
+
 func TestEncrypt(t *testing.T) {
 	var (
 		err       error
@@ -21,7 +25,7 @@ func TestEncrypt(t *testing.T) {
 		}
 	}()
 
-	secret, err = Encrypt([]byte(plantText), key)
+	secret, err = encrypt([]byte(plantText), key)
 	if err != nil {
 		return
 	}
@@ -29,7 +33,7 @@ func TestEncrypt(t *testing.T) {
 	secretText = string(secret)
 	log.Println(secretText)
 
-	plan, err = Decrypt(secret, key)
+	plan, err = decrypt(secret, key)
 	if err != nil {
 		return
 	}

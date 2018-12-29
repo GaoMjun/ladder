@@ -4,44 +4,71 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"errors"
 )
 
-func Encrypt(plantText, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+func encrypt(i, key []byte) (o []byte, err error) {
+	var (
+		block cipher.Block
+		mode  cipher.BlockMode
+	)
+
+	block, err = aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return
 	}
-	plantText = PKCS7Padding(plantText, block.BlockSize())
 
-	blockModel := cipher.NewCBCEncrypter(block, key)
+	mode = cipher.NewCBCEncrypter(block, key)
 
-	ciphertext := make([]byte, len(plantText))
+	i, _ = padding(i, block.BlockSize())
+	o = make([]byte, len(i))
 
-	blockModel.CryptBlocks(ciphertext, plantText)
-	return ciphertext, nil
+	mode.CryptBlocks(o, i)
+	return
 }
 
-func PKCS7Padding(ciphertext []byte, blockSize int) []byte {
-	padding := blockSize - len(ciphertext)%blockSize
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padtext...)
+func padding(i []byte, blockSize int) (o []byte, err error) {
+	var (
+		paddingSize int
+		padding     []byte
+	)
+
+	paddingSize = blockSize - len(i)%blockSize
+	padding = bytes.Repeat([]byte{byte(paddingSize)}, paddingSize)
+	o = append(i, padding...)
+	return
 }
 
-func Decrypt(ciphertext, key []byte) ([]byte, error) {
-	keyBytes := []byte(key)
-	block, err := aes.NewCipher(keyBytes)
+func decrypt(i, key []byte) (o []byte, err error) {
+	var (
+		block cipher.Block
+		mode  cipher.BlockMode
+	)
+
+	block, err = aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return
 	}
-	blockModel := cipher.NewCBCDecrypter(block, keyBytes)
-	plantText := make([]byte, len(ciphertext))
-	blockModel.CryptBlocks(plantText, ciphertext)
-	plantText = PKCS7UnPadding(plantText, block.BlockSize())
-	return plantText, nil
+
+	o = make([]byte, len(i))
+	mode = cipher.NewCBCDecrypter(block, key)
+	mode.CryptBlocks(o, i)
+
+	o, err = unPadding(o, block.BlockSize())
+	return
 }
 
-func PKCS7UnPadding(plantText []byte, blockSize int) []byte {
-	length := len(plantText)
-	unpadding := int(plantText[length-1])
-	return plantText[:(length - unpadding)]
+func unPadding(i []byte, blockSize int) (o []byte, err error) {
+	var (
+		size        = len(i)
+		paddingSize = int(i[size-1])
+	)
+
+	if paddingSize < 0 || paddingSize > blockSize {
+		err = errors.New("uppadding failed")
+		return
+	}
+
+	o = i[:(size - paddingSize)]
+	return
 }

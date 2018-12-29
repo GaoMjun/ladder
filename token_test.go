@@ -33,7 +33,10 @@ func TestToken(t *testing.T) {
 
 	log.Println(user)
 
-	pass = "gfw1"
+	pass = "gfw"
 	ok, err = CheckToken(user, pass, token)
+	if err != nil {
+		return
+	}
 	log.Println(ok)
 }

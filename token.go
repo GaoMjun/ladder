@@ -17,7 +17,7 @@ func GenerateToken(user, pass string) (token string, err error) {
 		secret []byte
 	)
 
-	secret, err = Encrypt([]byte(plant), key[:])
+	secret, err = encrypt([]byte(plant), key[:])
 	if err != nil {
 		return
 	}
@@ -42,7 +42,7 @@ func ParseToken(token string, pass string) (user string, err error) {
 		return
 	}
 
-	plantBytes, err = Decrypt(secret, key[:])
+	plantBytes, err = decrypt(secret, key[:])
 	if err != nil {
 		return
 	}
