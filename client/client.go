@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(conn *ladder.Conn, channels *ladder.Channels) {
+func handleConn(conn net.Conn, channels *ladder.Channels) {
 	var (
 		err     error
 		config  *ssh.ClientConfig

@@ -57,7 +57,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleConn(ladder.NewConn(conn))
+	handleConn(ladder.NewConnWithSnappy(ladder.NewConn(conn)))
 }
 
 func handleFake(w http.ResponseWriter, r *http.Request) {

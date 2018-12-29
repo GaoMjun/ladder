@@ -37,7 +37,7 @@ func main() {
 				return
 			}
 
-			handleConn(ladder.NewConn(conn), channels)
+			handleConn(ladder.NewConnWithSnappy(ladder.NewConn(conn)), channels)
 		}()
 	}
 

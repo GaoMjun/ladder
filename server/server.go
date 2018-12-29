@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(conn *ladder.Conn) {
+func handleConn(conn net.Conn) {
 	var (
 		err     error
 		config  *ssh.ServerConfig
