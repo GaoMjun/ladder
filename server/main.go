@@ -19,6 +19,8 @@ func main() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	var (
 		err      error
+		token    string
+		tokenOk  bool
 		conn     *websocket.Conn
 		upgrader = websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -26,6 +28,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 	)
+
+	token = r.Header.Get("token")
+	log.Println(token)
+	tokenOk, err = ladder.CheckToken("fuck", "gfw", token)
+	if err != nil {
+		return
+	}
+	log.Println(tokenOk)
 
 	conn, err = upgrader.Upgrade(w, r, nil)
 	if err != nil {
