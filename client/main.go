@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/url"
 	"time"
 
@@ -88,13 +89,15 @@ func createChannel(config Config, remote Remote, channels *ladder.Channels) {
 	}
 
 	if len(remote.IP) > 0 {
-		header["Host"] = []string{u.Host}
-		u.Host = remote.IP
+		dialer.NetDial = func(network, addr string) (net.Conn, error) {
+			return net.Dial(network, remote.IP)
+		}
 	}
 
 	token, _ = ladder.GenerateToken(user, pass)
 	header["token"] = []string{token}
 
+	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
 	urlString = u.String()
 
 TRY:
