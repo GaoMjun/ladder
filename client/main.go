@@ -1,7 +1,12 @@
-package main
+package client
 
 import (
+	"errors"
+	"flag"
+	"fmt"
 	"log"
+	"net/url"
+	"time"
 
 	"github.com/GaoMjun/ladder"
 	"github.com/gorilla/websocket"
@@ -11,15 +16,15 @@ func init() {
 	log.SetFlags(log.Lshortfile)
 }
 
-func main() {
+func Run(args []string) {
 	var (
-		err  error
-		conn *websocket.Conn
+		err   error
+		flags = flag.NewFlagSet("client", flag.ContinueOnError)
+
+		config Config
 
 		tcpServer *TCPServer
 		channels  = ladder.NewChannels()
-		token     string
-		header    map[string][]string
 	)
 	defer func() {
 		if err != nil {
@@ -27,20 +32,82 @@ func main() {
 		}
 	}()
 
-	token, _ = ladder.GenerateToken("fuck", "gfw")
-	header = map[string][]string{"token": []string{token}}
+	configFile := flags.String("c", "", "configuration file")
+	flags.Parse(args)
 
-	for i := 0; i < 10; i++ {
-		go func() {
-			conn, _, err = websocket.DefaultDialer.Dial("ws://127.0.0.1:8888/", header)
-			if err != nil {
-				return
-			}
-
-			handleConn(ladder.NewConnWithSnappy(ladder.NewConn(conn)), channels)
-		}()
+	if len(*configFile) <= 0 {
+		err = errors.New("invalid parameter")
+		return
 	}
 
-	tcpServer = NewTCPServer(":9999", channels)
+	config, err = NewConfig(*configFile)
+	if err != nil {
+		return
+	}
+
+	for _, remote := range config.Remotes {
+		for i := 0; i < remote.Channels; i++ {
+			go createChannel(config, remote, channels)
+		}
+	}
+
+	tcpServer = NewTCPServer(config.Listen, channels)
 	err = tcpServer.Run()
+}
+
+func createChannel(config Config, remote Remote, channels *ladder.Channels) {
+	var (
+		err       error
+		user      = config.User
+		pass      = config.Pass
+		conn      *websocket.Conn
+		token     string
+		header    = map[string][]string{}
+		dialer    = &websocket.Dialer{HandshakeTimeout: time.Second * 5}
+		urlString = remote.Host
+		u         *url.URL
+	)
+	defer func() {
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	u, err = url.Parse(urlString)
+	if err != nil {
+		return
+	}
+
+	if u.Scheme == "http" {
+		u.Scheme = "ws"
+	} else if u.Scheme == "https" {
+		u.Scheme = "wss"
+	} else {
+		err = errors.New(fmt.Sprint("not support protocol", u.Scheme))
+		return
+	}
+
+	if len(remote.IP) > 0 {
+		header["Host"] = []string{u.Host}
+		u.Host = remote.IP
+	}
+
+	token, _ = ladder.GenerateToken(user, pass)
+	header["token"] = []string{token}
+
+	urlString = u.String()
+
+TRY:
+	if conn != nil {
+		conn.Close()
+		conn = nil
+	}
+	conn, _, err = dialer.Dial(urlString, header)
+	if err != nil {
+		return
+	}
+
+	handleConn(config, ladder.NewConnWithSnappy(ladder.NewConn(conn)), channels)
+	time.Sleep(time.Second * 3)
+	goto TRY
 }

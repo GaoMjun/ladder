@@ -1,7 +1,8 @@
-package main
+package server
 
 import (
 	"errors"
+	"flag"
 	"log"
 	"net/http"
 
@@ -13,11 +14,52 @@ func init() {
 	log.SetFlags(log.Lshortfile)
 }
 
-func main() {
-	log.Println(http.ListenAndServe(":8888", http.HandlerFunc(handler)))
+type server struct {
+	listen string
+	user   string
+	pass   string
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func Run(args []string) {
+	var (
+		err   error
+		flags = flag.NewFlagSet("server", flag.ContinueOnError)
+		s     = &server{}
+	)
+	defer func() {
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	l := flags.String("l", "", "listen at")
+	u := flags.String("u", "", "user")
+	p := flags.String("p", "", "pass")
+	flags.Parse(args)
+
+	if len(*l) <= 0 {
+		err = errors.New("invalid parameter")
+		return
+	}
+
+	if len(*u) <= 0 {
+		err = errors.New("invalid parameter")
+		return
+	}
+
+	if len(*p) <= 0 {
+		err = errors.New("invalid parameter")
+		return
+	}
+
+	s.listen = *l
+	s.user = *u
+	s.pass = *p
+
+	err = http.ListenAndServe(s.listen, http.HandlerFunc(s.handler))
+}
+
+func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 	var (
 		err      error
 		token    string
@@ -42,7 +84,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenOk, err = ladder.CheckToken("fuck", "gfw", token)
+	tokenOk, err = ladder.CheckToken(self.user, self.pass, token)
 	if err != nil {
 		return
 	}
@@ -57,7 +99,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleConn(ladder.NewConnWithSnappy(ladder.NewConn(conn)))
+	handleConn(ladder.NewConnWithSnappy(ladder.NewConn(conn)), self.user, self.pass)
 }
 
 func handleFake(w http.ResponseWriter, r *http.Request) {

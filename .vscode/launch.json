@@ -9,9 +9,13 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/client",
+            "program": "${workspaceFolder}/main",
             "env": {},
-            "args": []
+            "args": [
+                "client",
+                "-c",
+                "../client/config.jsonc"
+            ]
         }
     ]
 }

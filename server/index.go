@@ -1,4 +1,4 @@
-package main
+package server
 
 const html = `
 <!DOCTYPE html>

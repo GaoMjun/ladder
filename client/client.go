@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(conn net.Conn, channels *ladder.Channels) {
+func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 	var (
 		err     error
 		config  *ssh.ClientConfig
@@ -25,8 +25,8 @@ func handleConn(conn net.Conn, channels *ladder.Channels) {
 	}()
 
 	config = &ssh.ClientConfig{
-		User: "fuck",
-		Auth: []ssh.AuthMethod{ssh.Password("gfw")},
+		User: conf.User,
+		Auth: []ssh.AuthMethod{ssh.Password(conf.Pass)},
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) (err error) {
 			return
 		},

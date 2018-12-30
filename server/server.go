@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(conn net.Conn) {
+func handleConn(conn net.Conn, user, pass string) {
 	var (
 		err     error
 		config  *ssh.ServerConfig
@@ -30,13 +30,13 @@ func handleConn(conn net.Conn) {
 		}
 	}()
 
-	config, err = generateServerConfig(func(c ssh.ConnMetadata, pass []byte) (perm *ssh.Permissions, err error) {
+	config, err = generateServerConfig(func(c ssh.ConnMetadata, passwd []byte) (perm *ssh.Permissions, err error) {
 		var (
-			user   = c.User()
-			passwd = string(pass)
+			u = c.User()
+			p = string(passwd)
 			// session = string(c.SessionID())
 		)
-		if user == "fuck" && passwd == "gfw" {
+		if u == user && p == pass {
 			return
 		}
 		err = errors.New("Invalid auth")
