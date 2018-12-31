@@ -83,6 +83,7 @@ func createChannel(config Config, remote Remote, channels *ladder.Channels) {
 		err = errors.New(fmt.Sprint("not support protocol", u.Scheme))
 		return
 	}
+	urlString = u.String()
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
@@ -90,13 +91,12 @@ func createChannel(config Config, remote Remote, channels *ladder.Channels) {
 		}
 	}
 
+	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
+
+TRY:
 	token, _ = ladder.GenerateToken(user, pass)
 	header["token"] = []string{token}
 
-	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
-	urlString = u.String()
-
-TRY:
 	if conn != nil {
 		conn.Close()
 		conn = nil
