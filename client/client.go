@@ -19,8 +19,8 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 		chans   <-chan ssh.NewChannel
 		reqs    <-chan *ssh.Request
 
-		backend *ladder.BackEnd
-		timeout *goutils.Timeout
+		backend  *ladder.BackEnd
+		repeater *goutils.Repeater
 	)
 	defer func() {
 		if err != nil {
@@ -49,7 +49,7 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 		}
 	}()
 
-	timeout = goutils.NewTimeout(time.Second*30, func() {
+	repeater = goutils.NewRepeater(time.Second*30, func() {
 		if sshConn != nil {
 			_, _, err := sshConn.SendRequest("ping", false, nil)
 			if err != nil {
@@ -66,5 +66,5 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 
 	channels.DelBackEnd(backend)
 
-	timeout.Stop()
+	repeater.Stop()
 }
