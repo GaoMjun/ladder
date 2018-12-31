@@ -51,7 +51,7 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 
 	timeout = goutils.NewTimeout(time.Second*30, func() {
 		if sshConn != nil {
-			_, _, err := sshConn.SendRequest("ping", true, nil)
+			_, _, err := sshConn.SendRequest("ping", false, nil)
 			if err != nil {
 				log.Println(err)
 			}
