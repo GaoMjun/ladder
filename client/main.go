@@ -13,10 +13,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func init() {
-	log.SetFlags(log.Lshortfile)
-}
-
 func Run(args []string) {
 	var (
 		err   error
@@ -107,9 +103,12 @@ TRY:
 	}
 	conn, _, err = dialer.Dial(urlString, header)
 	if err != nil {
-		return
+		log.Println(err)
+		time.Sleep(time.Second * 3)
+		goto TRY
 	}
 
+	log.Println("websocket connected")
 	handleConn(config, ladder.NewConnWithSnappy(ladder.NewConn(conn)), channels)
 	time.Sleep(time.Second * 3)
 	goto TRY

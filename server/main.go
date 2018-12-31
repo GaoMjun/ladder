@@ -3,16 +3,13 @@ package server
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/GaoMjun/ladder"
 	"github.com/gorilla/websocket"
 )
-
-func init() {
-	log.SetFlags(log.Lshortfile)
-}
 
 type server struct {
 	listen string
@@ -80,7 +77,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 
 	token = r.Header.Get("token")
 	if len(token) <= 0 {
-		err = errors.New("token invalid")
+		err = errors.New("token invalid, no token")
 		return
 	}
 
@@ -90,7 +87,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if tokenOk != true {
-		err = errors.New("token invalid")
+		err = errors.New(fmt.Sprint("token invalid,", token))
 		return
 	}
 

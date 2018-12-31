@@ -9,6 +9,10 @@ import (
 	"github.com/GaoMjun/ladder/server"
 )
 
+func init() {
+	log.SetFlags(log.Ltime | log.Lshortfile)
+}
+
 func main() {
 	var (
 		err error

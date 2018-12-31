@@ -56,13 +56,13 @@ func ParseToken(token string, pass string) (user string, err error) {
 
 	timestamp, err = strconv.ParseInt(ss[1], 10, 64)
 	if err != nil {
-		err = errors.New("token invalid")
+		err = errors.New("token invalid, timestamp invalid")
 		return
 	}
 
 	duration = time.Now().Unix() - timestamp
 	if duration < 0 || duration > 10 {
-		err = errors.New("token invalid")
+		err = errors.New("token invalid, timeout")
 		return
 	}
 
