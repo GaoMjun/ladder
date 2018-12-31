@@ -76,7 +76,15 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 
 func handleRequests(reqs <-chan *ssh.Request) {
 	for r := range reqs {
-		log.Println(r)
+		switch r.Type {
+		case "ping":
+			err := r.Reply(true, nil)
+			if err != nil {
+				log.Println(err)
+			}
+		default:
+			log.Println(r)
+		}
 	}
 }
 

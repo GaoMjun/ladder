@@ -3,6 +3,9 @@ package client
 import (
 	"log"
 	"net"
+	"time"
+
+	"github.com/GaoMjun/goutils"
 
 	"github.com/GaoMjun/ladder"
 	"golang.org/x/crypto/ssh"
@@ -17,6 +20,7 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 		reqs    <-chan *ssh.Request
 
 		backend *ladder.BackEnd
+		timeout *goutils.Timeout
 	)
 	defer func() {
 		if err != nil {
@@ -45,6 +49,15 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 		}
 	}()
 
+	timeout = goutils.NewTimeout(time.Second*30, func() {
+		if sshConn != nil {
+			_, _, err := sshConn.SendRequest("ping", true, nil)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	})
+
 	backend = ladder.NewBackEnd(sshConn)
 
 	channels.AddBackEnd(backend)
@@ -52,4 +65,6 @@ func handleConn(conf Config, conn net.Conn, channels *ladder.Channels) {
 	err = sshConn.Wait()
 
 	channels.DelBackEnd(backend)
+
+	timeout.Stop()
 }
