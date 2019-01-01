@@ -41,6 +41,7 @@ func Run(args []string) {
 	if err != nil {
 		return
 	}
+	fmt.Println(config)
 
 	for _, remote := range config.Remotes {
 		for i := 0; i < remote.Channels; i++ {

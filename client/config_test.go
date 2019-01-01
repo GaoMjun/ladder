@@ -2,6 +2,7 @@ package client
 
 import (
 	"log"
+	"net"
 	"testing"
 )
 
@@ -13,4 +14,14 @@ func TestConfig(t *testing.T) {
 	}
 
 	log.Println(config)
+}
+
+func TestLookupHost(t *testing.T) {
+	addrs, err := net.LookupHost("baidu.com")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println(addrs)
 }

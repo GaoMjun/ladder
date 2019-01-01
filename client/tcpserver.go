@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -66,6 +67,7 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 	}
 
 	sshConn = be.V.(ssh.Conn)
+	log.Println(fmt.Sprint("select ", sshConn.RemoteAddr().String()))
 	stream, reqs, err := sshConn.OpenChannel("", []byte{})
 	if err != nil {
 		return
