@@ -55,15 +55,16 @@ func Run(args []string) {
 
 func createChannel(config Config, remote Remote, channels *ladder.Channels) {
 	var (
-		err       error
-		user      = config.User
-		pass      = config.Pass
-		conn      *websocket.Conn
-		token     string
-		header    = map[string][]string{}
-		dialer    = &websocket.Dialer{HandshakeTimeout: time.Second * 5}
-		urlString = remote.Host
-		u         *url.URL
+		err             error
+		user            = config.User
+		pass            = config.Pass
+		conn            *websocket.Conn
+		token           string
+		header          = map[string][]string{}
+		dialer          = &websocket.Dialer{HandshakeTimeout: time.Second * 5}
+		urlString       = remote.Host
+		u               *url.URL
+		dialFailedCount = 0
 	)
 	defer func() {
 		if err != nil {
@@ -105,6 +106,11 @@ TRY:
 	conn, _, err = dialer.Dial(urlString, header)
 	if err != nil {
 		log.Println(err)
+		dialFailedCount++
+
+		if dialFailedCount > 3 {
+			return
+		}
 		time.Sleep(time.Second * 3)
 		goto TRY
 	}
