@@ -61,8 +61,8 @@ func ParseToken(token string, pass string) (user string, err error) {
 	}
 
 	duration = time.Now().Unix() - timestamp
-	if duration < 0 || duration > 10 {
-		err = errors.New("token invalid, timeout")
+	if duration < -60 || duration > 60 {
+		err = errors.New(fmt.Sprint("token invalid, timeout ", duration))
 		return
 	}
 

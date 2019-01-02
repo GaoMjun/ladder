@@ -62,13 +62,6 @@ func (self *ConnWithSnappy) SetWriteDeadline(t time.Time) error {
 }
 
 func (self *ConnWithSnappy) SetDeadline(t time.Time) (err error) {
-	err = self.SetReadDeadline(t)
-	if err != nil {
-		return
-	}
-	err = self.SetWriteDeadline(t)
-	if err != nil {
-		return
-	}
+	err = self.c.SetDeadline(t)
 	return
 }
