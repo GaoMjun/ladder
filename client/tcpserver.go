@@ -74,5 +74,5 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 	}
 	go ssh.DiscardRequests(reqs)
 
-	ladder.Pipe(conn, stream)
+	ladder.Pipe(conn, ladder.NewConnWithSnappy(stream))
 }

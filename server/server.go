@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strings"
@@ -70,7 +71,7 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 		}
 
 		go ssh.DiscardRequests(reqs)
-		go handleStream(stream)
+		go handleStream(ladder.NewConnWithSnappy(stream))
 	}
 }
 
@@ -89,7 +90,7 @@ func handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
-func handleStream(stream ssh.Channel) {
+func handleStream(stream io.ReadWriteCloser) {
 	var (
 		err     error
 		request *Request

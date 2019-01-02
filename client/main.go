@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
@@ -55,16 +56,18 @@ func Run(args []string) {
 
 func createChannel(config Config, remote Remote, channels *ladder.Channels) {
 	var (
-		err             error
-		user            = config.User
-		pass            = config.Pass
-		conn            *websocket.Conn
-		token           string
-		header          = map[string][]string{}
-		dialer          = &websocket.Dialer{HandshakeTimeout: time.Second * 5}
-		urlString       = remote.Host
-		u               *url.URL
-		dialFailedCount = 0
+		err                error
+		user               = config.User
+		pass               = config.Pass
+		conn               *websocket.Conn
+		token              string
+		header             = map[string][]string{}
+		dialer             = &websocket.Dialer{HandshakeTimeout: time.Second * 5}
+		urlString          = remote.Host
+		u                  *url.URL
+		dialFailedCount    = 0
+		connectFailedCount = 0
+		key                = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
 	)
 	defer func() {
 		if err != nil {
@@ -114,9 +117,13 @@ TRY:
 		time.Sleep(time.Second * 3)
 		goto TRY
 	}
-
 	log.Println("websocket connected")
-	handleConn(config, ladder.NewConnWithSnappy(ladder.NewConn(conn)), channels)
+
+	connectFailedCount++
+	if connectFailedCount > 3 {
+		return
+	}
+	handleConn(config, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels)
 	time.Sleep(time.Second * 3)
 	goto TRY
 }

@@ -1,6 +1,7 @@
 package ladder
 
 import (
+	"crypto/md5"
 	"log"
 	"testing"
 )
@@ -39,4 +40,24 @@ func TestEncrypt(t *testing.T) {
 	}
 	plantText = string(plan)
 	log.Println(plantText)
+}
+
+func TestXor(t *testing.T) {
+	i := []byte("hello world")
+	key := md5.Sum([]byte("user:pass"))
+
+	log.Println(i)
+	log.Println(key)
+
+	o := xor(i, key[:])
+	log.Println(o)
+
+	// o = xor(o, key[:])
+	// log.Println(o)
+
+	for _, b := range o {
+		c := []byte{b}
+		d := xor(c, key[:])
+		log.Println(d)
+	}
 }
