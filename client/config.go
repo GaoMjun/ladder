@@ -13,11 +13,7 @@ import (
 )
 
 type Config struct {
-	Listen string
-
-	User string
-	Pass string
-
+	Listen  string
 	Remotes []Remote
 }
 
@@ -25,6 +21,8 @@ type Remote struct {
 	Host     string
 	IP       string
 	Channels int
+	User     string
+	Pass     string
 }
 
 func NewConfig(filename string) (config Config, err error) {

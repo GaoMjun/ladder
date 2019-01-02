@@ -46,7 +46,7 @@ func Run(args []string) {
 
 	for _, remote := range config.Remotes {
 		for i := 0; i < remote.Channels; i++ {
-			go createChannel(config, remote, channels)
+			go createChannel(remote, channels)
 		}
 	}
 
@@ -54,11 +54,11 @@ func Run(args []string) {
 	err = tcpServer.Run()
 }
 
-func createChannel(config Config, remote Remote, channels *ladder.Channels) {
+func createChannel(remote Remote, channels *ladder.Channels) {
 	var (
 		err                error
-		user               = config.User
-		pass               = config.Pass
+		user               = remote.User
+		pass               = remote.Pass
 		conn               *websocket.Conn
 		token              string
 		header             = map[string][]string{}
@@ -123,7 +123,7 @@ TRY:
 	if connectFailedCount > 3 {
 		return
 	}
-	handleConn(config, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels)
+	handleConn(user, pass, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels)
 	time.Sleep(time.Second * 3)
 	goto TRY
 }
