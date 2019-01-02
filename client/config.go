@@ -13,7 +13,8 @@ import (
 )
 
 type Config struct {
-	Listen  string
+	HttpListen  string
+	SocksListen string
 	Remotes []Remote
 }
 

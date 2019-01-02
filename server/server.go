@@ -63,6 +63,7 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 		stream ssh.Channel
 		reqs   <-chan *ssh.Request
 	)
+
 	for ch := range chans {
 		stream, reqs, err = ch.Accept()
 		if err != nil {
@@ -71,7 +72,25 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 		}
 
 		go ssh.DiscardRequests(reqs)
-		go handleStream(ladder.NewConnWithSnappy(stream))
+
+		proto := string(ch.ExtraData())
+		switch proto {
+		case "http":
+			go handleStream(ladder.NewConnWithSnappy(stream))
+		case "socks":
+			go handleSocks(ladder.NewConnWithChannel(ladder.NewConnWithSnappy(stream)))
+		default:
+			log.Println(fmt.Sprint("not support protocol ", proto))
+		}
+	}
+}
+
+var socksServer = ladder.NewSocks5Server()
+
+func handleSocks(conn net.Conn) {
+	err := socksServer.ServeConn(conn)
+	if err != nil {
+		log.Println(err)
 	}
 }
 

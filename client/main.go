@@ -21,8 +21,7 @@ func Run(args []string) {
 
 		config Config
 
-		tcpServer *TCPServer
-		channels  = ladder.NewChannels()
+		channels = ladder.NewChannels()
 	)
 	defer func() {
 		if err != nil {
@@ -50,8 +49,15 @@ func Run(args []string) {
 		}
 	}
 
-	tcpServer = NewTCPServer(config.Listen, channels)
-	err = tcpServer.Run()
+	httpProxyServer := NewTCPServer("http", config.HttpListen, channels)
+	socksProxyServer := NewTCPServer("socks", config.SocksListen, channels)
+
+	go func() {
+		err := httpProxyServer.Run()
+		log.Panicln(err)
+	}()
+
+	err = socksProxyServer.Run()
 }
 
 func createChannel(remote Remote, channels *ladder.Channels) {

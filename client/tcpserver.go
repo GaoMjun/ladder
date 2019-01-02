@@ -11,12 +11,14 @@ import (
 )
 
 type TCPServer struct {
+	proto    string
 	addr     string
 	channels *ladder.Channels
 }
 
-func NewTCPServer(addr string, channels *ladder.Channels) (s *TCPServer) {
+func NewTCPServer(proto, addr string, channels *ladder.Channels) (s *TCPServer) {
 	s = &TCPServer{}
+	s.proto = proto
 	s.addr = addr
 	s.channels = channels
 	return
@@ -68,7 +70,7 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 
 	sshConn = be.V.(ssh.Conn)
 	log.Println(fmt.Sprint("select ", sshConn.RemoteAddr().String()))
-	stream, reqs, err := sshConn.OpenChannel("", []byte{})
+	stream, reqs, err := sshConn.OpenChannel("", []byte(self.proto))
 	if err != nil {
 		return
 	}
