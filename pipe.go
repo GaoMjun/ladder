@@ -18,12 +18,12 @@ func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) (int64, int64) {
 	}
 
 	go func() {
-		received, _ = io.Copy(src, dst)
+		received, _ = io.CopyBuffer(src, dst, make([]byte, 1024))
 		o.Do(close)
 	}()
 
 	go func() {
-		sent, _ = io.Copy(dst, src)
+		sent, _ = io.CopyBuffer(dst, src, make([]byte, 1024))
 		o.Do(close)
 	}()
 

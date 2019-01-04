@@ -68,7 +68,7 @@ func createChannel(remote Remote, channels *ladder.Channels) {
 		conn               *websocket.Conn
 		token              string
 		header             = map[string][]string{}
-		dialer             = &websocket.Dialer{HandshakeTimeout: time.Second * 5}
+		dialer             = &websocket.Dialer{HandshakeTimeout: time.Second * 5, ReadBufferSize: 1024, WriteBufferSize: 1024}
 		urlString          = remote.Host
 		u                  *url.URL
 		dialFailedCount    = 0
