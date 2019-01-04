@@ -48,10 +48,12 @@ func (self *TCPServer) Run() (err error) {
 
 func (self *TCPServer) handleConn(conn net.Conn) {
 	var (
-		err     error
-		stream  io.ReadWriteCloser
-		be      *ladder.BackEnd
-		sshConn ssh.Conn
+		err          error
+		stream       io.ReadWriteCloser
+		be           *ladder.BackEnd
+		sshConn      ssh.Conn
+		request      *ladder.Request
+		snappyStream *ladder.ConnWithSnappy
 	)
 	defer func() {
 		conn.Close()
@@ -74,7 +76,22 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 	if err != nil {
 		return
 	}
+	snappyStream = ladder.NewConnWithSnappy(stream)
+
 	go ssh.DiscardRequests(reqs)
 
-	ladder.Pipe(conn, ladder.NewConnWithSnappy(stream))
+	if self.proto == "http" {
+		request, err = ladder.NewRequest(conn)
+		if err != nil {
+			return
+		}
+
+		if request.HttpRequest.Method == "CONNECT" {
+			fmt.Fprint(conn, "HTTP/1.1 200 Connection established\r\n\r\n")
+		}
+
+		snappyStream.Write(request.Bytes())
+	}
+
+	ladder.Pipe(conn, snappyStream)
 }

@@ -78,7 +78,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	token = r.Header.Get("token")
+	token = r.Header.Get("Token")
 	if len(token) <= 0 {
 		err = errors.New("token invalid, no token")
 		return

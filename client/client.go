@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(user, pass string, conn net.Conn, channels *ladder.Channels) {
+func handleConn(user, pass string, conn net.Conn, channels *ladder.Channels, successFunc func()) {
 	var (
 		err     error
 		config  *ssh.ClientConfig
@@ -41,6 +41,8 @@ func handleConn(user, pass string, conn net.Conn, channels *ladder.Channels) {
 	if err != nil {
 		return
 	}
+
+	successFunc()
 
 	go ssh.DiscardRequests(reqs)
 	go func() {

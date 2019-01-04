@@ -106,7 +106,7 @@ func createChannel(remote Remote, channels *ladder.Channels) {
 
 TRY:
 	token, _ = ladder.GenerateToken(user, pass)
-	header["token"] = []string{token}
+	header["Token"] = []string{token}
 
 	if conn != nil {
 		conn.Close()
@@ -123,13 +123,16 @@ TRY:
 		time.Sleep(time.Second * 3)
 		goto TRY
 	}
+	dialFailedCount = 0
 	log.Println("websocket connected")
 
 	connectFailedCount++
 	if connectFailedCount > 3 {
 		return
 	}
-	handleConn(user, pass, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels)
+	handleConn(user, pass, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels, func() {
+		connectFailedCount = 0
+	})
 	time.Sleep(time.Second * 3)
 	goto TRY
 }

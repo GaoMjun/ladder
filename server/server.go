@@ -112,7 +112,7 @@ func handleRequests(reqs <-chan *ssh.Request) {
 func handleStream(stream io.ReadWriteCloser) {
 	var (
 		err     error
-		request *Request
+		request *ladder.Request
 		address string
 		conn    net.Conn
 		remote  *ladder.ConnWithTimeout
@@ -128,7 +128,7 @@ func handleStream(stream io.ReadWriteCloser) {
 		}
 	}()
 
-	request, err = NewRequest(stream)
+	request, err = ladder.NewRequest(stream)
 	if err != nil {
 		return
 	}
@@ -145,9 +145,7 @@ func handleStream(stream io.ReadWriteCloser) {
 	}
 	remote = ladder.NewConnWithTimeout(conn)
 
-	if request.HttpRequest.Method == "CONNECT" {
-		fmt.Fprint(stream, "HTTP/1.1 200 Connection established\r\n\r\n")
-	} else {
+	if request.HttpRequest.Method != "CONNECT" {
 		remote.Write(request.Bytes())
 	}
 
