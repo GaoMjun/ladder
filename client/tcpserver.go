@@ -53,7 +53,7 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 		be           *ladder.BackEnd
 		sshConn      ssh.Conn
 		request      *ladder.Request
-		snappyStream *ladder.ConnWithSnappy
+		snappyStream io.ReadWriteCloser
 	)
 	defer func() {
 		conn.Close()
@@ -70,13 +70,18 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 		return
 	}
 
-	sshConn = be.V.(ssh.Conn)
+	channel := be.V.(*Channel)
+	sshConn = channel.conn
 	log.Println(fmt.Sprint("select ", sshConn.RemoteAddr().String()))
 	stream, reqs, err := sshConn.OpenChannel("", []byte(self.proto))
 	if err != nil {
 		return
 	}
-	snappyStream = ladder.NewConnWithSnappy(stream)
+	if channel.comp == true {
+		snappyStream = ladder.NewConnWithSnappy(stream)
+	} else {
+		snappyStream = stream
+	}
 
 	go ssh.DiscardRequests(reqs)
 

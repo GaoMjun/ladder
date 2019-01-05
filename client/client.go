@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(user, pass string, conn net.Conn, channels *ladder.Channels, successFunc func()) {
+func handleConn(user, pass string, comp bool, conn net.Conn, channels *ladder.Channels, successFunc func()) {
 	var (
 		err     error
 		config  *ssh.ClientConfig
@@ -60,7 +60,11 @@ func handleConn(user, pass string, conn net.Conn, channels *ladder.Channels, suc
 		}
 	})
 
-	backend = ladder.NewBackEnd(sshConn)
+	channel := &Channel{
+		conn: sshConn,
+		comp: comp,
+	}
+	backend = ladder.NewBackEnd(channel)
 
 	channels.AddBackEnd(backend)
 

@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(conn net.Conn, user, pass string) {
+func handleConn(conn net.Conn, user, pass string, comp bool) {
 	var (
 		err     error
 		config  *ssh.ServerConfig
@@ -53,15 +53,16 @@ func handleConn(conn net.Conn, user, pass string) {
 		return
 	}
 
-	go handleChannels(chans)
+	go handleChannels(chans, comp)
 	handleRequests(reqs)
 }
 
-func handleChannels(chans <-chan ssh.NewChannel) {
+func handleChannels(chans <-chan ssh.NewChannel, comp bool) {
 	var (
-		err    error
-		stream ssh.Channel
-		reqs   <-chan *ssh.Request
+		err          error
+		stream       ssh.Channel
+		reqs         <-chan *ssh.Request
+		snappyStream io.ReadWriteCloser
 	)
 
 	for ch := range chans {
@@ -71,14 +72,20 @@ func handleChannels(chans <-chan ssh.NewChannel) {
 			continue
 		}
 
+		if comp == true {
+			snappyStream = ladder.NewConnWithSnappy(stream)
+		} else {
+			snappyStream = stream
+		}
+
 		go ssh.DiscardRequests(reqs)
 
 		proto := string(ch.ExtraData())
 		switch proto {
 		case "http":
-			go handleStream(ladder.NewConnWithSnappy(stream))
+			go handleStream(snappyStream)
 		case "socks":
-			go handleSocks(ladder.NewConnWithChannel(ladder.NewConnWithSnappy(stream)))
+			go handleSocks(ladder.NewConnWithChannel(snappyStream))
 		default:
 			log.Println(fmt.Sprint("not support protocol ", proto))
 		}

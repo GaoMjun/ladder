@@ -15,7 +15,7 @@ import (
 type Config struct {
 	HttpListen  string
 	SocksListen string
-	Remotes []Remote
+	Remotes     []Remote
 }
 
 type Remote struct {
@@ -24,6 +24,7 @@ type Remote struct {
 	Channels int
 	User     string
 	Pass     string
+	Compress bool
 }
 
 func NewConfig(filename string) (config Config, err error) {

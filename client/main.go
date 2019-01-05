@@ -65,6 +65,7 @@ func createChannel(remote Remote, channels *ladder.Channels) {
 		err                error
 		user               = remote.User
 		pass               = remote.Pass
+		comp               = remote.Compress
 		conn               *websocket.Conn
 		token              string
 		header             = map[string][]string{}
@@ -130,7 +131,7 @@ TRY:
 	if connectFailedCount > 3 {
 		return
 	}
-	handleConn(user, pass, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels, func() {
+	handleConn(user, pass, comp, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels, func() {
 		connectFailedCount = 0
 	})
 	time.Sleep(time.Second * 3)
