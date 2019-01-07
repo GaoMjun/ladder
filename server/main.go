@@ -42,7 +42,7 @@ func Run(args []string) {
 	if len(*l) <= 0 {
 		port := os.Getenv("PORT")
 		if len(port) <= 0 {
-			err = errors.New("invalid parameter")
+			err = errors.New("invalid parameter, no listen address")
 			return
 		}
 
@@ -50,12 +50,12 @@ func Run(args []string) {
 	}
 
 	if len(*u) <= 0 {
-		err = errors.New("invalid parameter")
+		err = errors.New("invalid parameter, no user")
 		return
 	}
 
 	if len(*p) <= 0 {
-		err = errors.New("invalid parameter")
+		err = errors.New("invalid parameter, no password")
 		return
 	}
 
