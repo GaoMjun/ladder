@@ -86,3 +86,58 @@ func CheckToken(user, pass, token string) (ok bool, err error) {
 
 	return
 }
+
+func EncryptHeader(i, user, pass string) (o string, err error) {
+	var (
+		plant  = []byte(fmt.Sprint(i, ":", user))
+		key    = md5.Sum([]byte(pass))
+		secret []byte
+	)
+
+	secret, err = encrypt([]byte(plant), key[:])
+	if err != nil {
+		return
+	}
+
+	o = base64.StdEncoding.EncodeToString(secret)
+	return
+}
+
+func DecryptHeader(i string, user, pass string) (o string, err error) {
+	var (
+		key        = md5.Sum([]byte(pass))
+		secret     []byte
+		plantBytes []byte
+		plant      string
+		ss         []string
+		_user      string
+	)
+
+	secret, err = base64.StdEncoding.DecodeString(i)
+	if err != nil {
+		return
+	}
+
+	plantBytes, err = decrypt(secret, key[:])
+	if err != nil {
+		return
+	}
+
+	plant = string(plantBytes)
+
+	ss = strings.Split(plant, ":")
+	if len(ss) <= 0 {
+		err = errors.New("decrypt failed")
+		return
+	}
+
+	_user = ss[len(ss)-1]
+
+	if _user != user {
+		err = errors.New("decrypt failed")
+		return
+	}
+
+	o = plant[:len(plant)-len(user)-1]
+	return
+}

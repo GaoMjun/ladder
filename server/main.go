@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/GaoMjun/ladder"
-	"github.com/gorilla/websocket"
 )
 
 type server struct {
@@ -70,17 +69,10 @@ func Run(args []string) {
 
 func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 	var (
-		err      error
-		token    string
-		tokenOk  bool
-		conn     *websocket.Conn
-		upgrader = websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		}
+		err          error
+		token        string
+		tokenOk      bool
+		originHeader string
 	)
 	defer func() {
 		if err != nil {
@@ -105,7 +97,8 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err = upgrader.Upgrade(w, r, nil)
+	originHeader = r.Header.Get("Header")
+	originHeader, err = ladder.DecryptHeader(originHeader, self.user, self.pass)
 	if err != nil {
 		return
 	}
