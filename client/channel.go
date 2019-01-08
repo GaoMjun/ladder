@@ -1,10 +1,8 @@
 package client
 
-import (
-	"golang.org/x/crypto/ssh"
-)
-
 type Channel struct {
-	conn ssh.Conn
+	host string
+	user string
+	pass string
 	comp bool
 }

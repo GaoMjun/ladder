@@ -1,17 +1,18 @@
 package client
 
 import (
+	"bufio"
 	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/GaoMjun/ladder"
-	"github.com/gorilla/websocket"
 )
 
 func Run(args []string) {
@@ -22,6 +23,7 @@ func Run(args []string) {
 		config Config
 
 		channels = ladder.NewChannels()
+		streamManager = ladder.NewStreamManager()
 	)
 	defer func() {
 		if err != nil {
@@ -49,8 +51,8 @@ func Run(args []string) {
 		}
 	}
 
-	httpProxyServer := NewTCPServer("http", config.HttpListen, channels)
-	socksProxyServer := NewTCPServer("socks", config.SocksListen, channels)
+	httpProxyServer := NewTCPServer("http", config.HttpListen, channels, streamManager)
+	socksProxyServer := NewTCPServer("socks", config.SocksListen, channels, streamManager)
 
 	go func() {
 		err := httpProxyServer.Run()
@@ -62,19 +64,18 @@ func Run(args []string) {
 
 func createChannel(remote Remote, channels *ladder.Channels) {
 	var (
-		err                error
-		user               = remote.User
-		pass               = remote.Pass
-		comp               = remote.Compress
-		conn               *websocket.Conn
-		token              string
-		header             = map[string][]string{}
-		dialer             = &websocket.Dialer{HandshakeTimeout: time.Second * 5, ReadBufferSize: 1024, WriteBufferSize: 1024}
-		urlString          = remote.Host
-		u                  *url.URL
-		dialFailedCount    = 0
-		connectFailedCount = 0
-		key                = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
+		err         error
+		user        = remote.User
+		pass        = remote.Pass
+		comp        = remote.Compress
+		conn        net.Conn
+		token       string
+		urlString   = remote.Host
+		u           *url.URL
+		key         = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
+		host        string
+		fakeRequest *ladder.FakeRequest
+		response    *http.Response
 	)
 	defer func() {
 		if err != nil {
@@ -87,53 +88,39 @@ func createChannel(remote Remote, channels *ladder.Channels) {
 		return
 	}
 
-	if u.Scheme == "http" {
-		u.Scheme = "ws"
-	} else if u.Scheme == "https" {
-		u.Scheme = "wss"
-	} else {
+	if u.Scheme != "http" && u.Scheme != "https" {
 		err = errors.New(fmt.Sprint("not support protocol", u.Scheme))
 		return
 	}
-	urlString = u.String()
 
-	if len(remote.IP) > 0 {
-		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.IP)
-		}
+	switch u.Scheme {
+	case "http":
+		host = fmt.Sprint(u.Hostname(), "80")
+	case "https":
+		host = fmt.Sprint(u.Hostname(), "443")
 	}
 
-	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
+	if len(remote.IP) > 0 {
+		host = remote.IP
+	}
 
 TRY:
 	token, _ = ladder.GenerateToken(user, pass)
-	header["Token"] = []string{token}
+	fakeRequest = ladder.NewFakeRequest(host, token, "", "0")
 
-	if conn != nil {
-		conn.Close()
-		conn = nil
-	}
-	conn, _, err = dialer.Dial(urlString, header)
+	conn, err = fakeRequest.Do()
 	if err != nil {
 		log.Println(err)
-		dialFailedCount++
-
-		if dialFailedCount > 3 {
-			return
-		}
-		time.Sleep(time.Second * 3)
 		goto TRY
 	}
-	dialFailedCount = 0
-	log.Println("websocket connected")
-
-	connectFailedCount++
-	if connectFailedCount > 3 {
-		return
+	response, err = http.ReadResponse(bufio.NewReader(conn), nil)
+	if err != nil {
+		log.Println(err)
+		goto TRY
 	}
-	handleConn(user, pass, comp, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels, func() {
-		connectFailedCount = 0
-	})
+
+	handleConn(comp, response.Body, channels)
+
 	time.Sleep(time.Second * 3)
 	goto TRY
 }

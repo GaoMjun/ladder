@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/GaoMjun/ladder"
 )
@@ -73,6 +74,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		token        string
 		tokenOk      bool
 		originHeader string
+		streamID     int
 	)
 	defer func() {
 		if err != nil {
@@ -97,13 +99,44 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sid := r.Header.Get("Sid")
+	if len(sid) <= 0 {
+		err = errors.New("no streamID header")
+		return
+	}
+	streamID, err = strconv.Atoi(sid)
+	if err != nil {
+		err = errors.New("invalid streamID")
+		return
+	}
+	if streamID < 0 || streamID > int(^uint16(0)) {
+		err = errors.New("invalid streamID")
+		return
+	}
+
+	if streamID == 0 {
+		w.Header().Set("Content-Type", "octet-stream")
+		w.Header().Set("Transfer-Encoding", "chunked")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusOK)
+
+		handleConn(ladder.NewConnWithXor(ladder.NewConn(conn), self.key[:]), self.user, self.pass, self.compress)
+		// block
+	}
+
 	originHeader = r.Header.Get("Header")
+	if len(originHeader) <= 0 {
+		err = errors.New("no origin header")
+		return
+	}
 	originHeader, err = ladder.DecryptHeader(originHeader, self.user, self.pass)
 	if err != nil {
 		return
 	}
 
-	handleConn(ladder.NewConnWithXor(ladder.NewConn(conn), self.key[:]), self.user, self.pass, self.compress)
+	// get channel with streamid, then dial originHeader host and pipe
+
+	handleFake(w, r)
 }
 
 func handleFake(w http.ResponseWriter, r *http.Request) {

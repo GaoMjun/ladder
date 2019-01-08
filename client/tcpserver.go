@@ -7,20 +7,21 @@ import (
 	"net"
 
 	"github.com/GaoMjun/ladder"
-	"golang.org/x/crypto/ssh"
 )
 
 type TCPServer struct {
-	proto    string
-	addr     string
-	channels *ladder.Channels
+	proto         string
+	addr          string
+	channels      *ladder.Channels
+	streamManager *ladder.StreamManager
 }
 
-func NewTCPServer(proto, addr string, channels *ladder.Channels) (s *TCPServer) {
+func NewTCPServer(proto, addr string, channels *ladder.Channels, streamManager *ladder.StreamManager) (s *TCPServer) {
 	s = &TCPServer{}
 	s.proto = proto
 	s.addr = addr
 	s.channels = channels
+	s.streamManager = streamManager
 	return
 }
 
@@ -48,22 +49,24 @@ func (self *TCPServer) Run() (err error) {
 
 func (self *TCPServer) handleConn(conn net.Conn) {
 	var (
-		err          error
-		stream       io.ReadWriteCloser
-		be           *ladder.BackEnd
-		sshConn      ssh.Conn
-		request      *ladder.Request
-		snappyStream io.ReadWriteCloser
+		err error
+
+		be       *ladder.BackEnd
+		request  *ladder.Request
+		streamID uint16
+		wc       io.WriteCloser
 	)
 	defer func() {
 		conn.Close()
-		if stream != nil {
-			stream.Close()
-		}
 		if err != nil {
 			log.Println(err)
 		}
 	}()
+
+	streamID, err = self.streamManager.GenerateStreamID()
+	if err != nil {
+		return
+	}
 
 	be, err = self.channels.GetBackEnd()
 	if err != nil {
@@ -71,19 +74,7 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 	}
 
 	channel := be.V.(*Channel)
-	sshConn = channel.conn
-	log.Println(fmt.Sprint("select ", sshConn.RemoteAddr().String()))
-	stream, reqs, err := sshConn.OpenChannel("", []byte(self.proto))
-	if err != nil {
-		return
-	}
-	if channel.comp == true {
-		snappyStream = ladder.NewConnWithSnappy(stream)
-	} else {
-		snappyStream = stream
-	}
-
-	go ssh.DiscardRequests(reqs)
+	token, _ := ladder.GenerateToken(channel.user, channel.pass)
 
 	if self.proto == "http" {
 		request, err = ladder.NewRequest(conn)
@@ -95,8 +86,15 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 			fmt.Fprint(conn, "HTTP/1.1 200 Connection established\r\n\r\n")
 		}
 
-		snappyStream.Write(request.Bytes())
+		fakeRequest := ladder.NewFakeRequest(channel.host, token, request.Dump(), fmt.Sprint(streamID))
+		c, err := fakeRequest.Do()
+		if err != nil {
+			return
+		}
+		wc = c.(io.WriteCloser)
 	}
+
+	
 
 	ladder.Pipe(conn, snappyStream)
 }
