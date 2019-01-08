@@ -62,19 +62,18 @@ func Run(args []string) {
 
 func createChannel(remote Remote, channels *ladder.Channels) {
 	var (
-		err                error
-		user               = remote.User
-		pass               = remote.Pass
-		comp               = remote.Compress
-		conn               *websocket.Conn
-		token              string
-		header             = map[string][]string{}
-		dialer             = &websocket.Dialer{HandshakeTimeout: time.Second * 5, ReadBufferSize: 1024, WriteBufferSize: 1024}
-		urlString          = remote.Host
-		u                  *url.URL
-		dialFailedCount    = 0
-		connectFailedCount = 0
-		key                = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
+		err       error
+		user      = remote.User
+		pass      = remote.Pass
+		comp      = remote.Compress
+		conn      *websocket.Conn
+		token     string
+		header    = map[string][]string{}
+		dialer    = &websocket.Dialer{HandshakeTimeout: time.Second * 5, ReadBufferSize: 1024, WriteBufferSize: 1024}
+		urlString = remote.Host
+		u         *url.URL
+		key       = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
+		reconnect = 1
 	)
 	defer func() {
 		if err != nil {
@@ -116,24 +115,31 @@ TRY:
 	conn, _, err = dialer.Dial(urlString, header)
 	if err != nil {
 		log.Println(err)
-		dialFailedCount++
 
-		if dialFailedCount > 3 {
-			return
-		}
-		time.Sleep(time.Second * 3)
+		reconnect = reconnectDuration(reconnect)
+		time.Sleep(time.Second * time.Duration(reconnect))
 		goto TRY
 	}
-	dialFailedCount = 0
-	log.Println("websocket connected")
+	log.Println("connected to ", urlString)
 
-	connectFailedCount++
-	if connectFailedCount > 3 {
+	handleConn(user, pass, comp, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels, func() {
+		reconnect = 1
+	})
+
+	reconnect = reconnectDuration(reconnect)
+	time.Sleep(time.Second * time.Duration(reconnect))
+	goto TRY
+}
+
+func reconnectDuration(d1 int) (d2 int) {
+	if d1 <= 1 {
+		d2 = 1
 		return
 	}
-	handleConn(user, pass, comp, ladder.NewConnWithXor(ladder.NewConn(conn), key[:]), channels, func() {
-		connectFailedCount = 0
-	})
-	time.Sleep(time.Second * 3)
-	goto TRY
+
+	d2 = d1 << 1
+	if d2 > 60*3 {
+		d2 = 1
+	}
+	return
 }

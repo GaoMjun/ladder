@@ -42,7 +42,9 @@ func handleConn(user, pass string, comp bool, conn net.Conn, channels *ladder.Ch
 		return
 	}
 
-	successFunc()
+	if successFunc != nil {
+		successFunc()
+	}
 
 	go ssh.DiscardRequests(reqs)
 	go func() {
