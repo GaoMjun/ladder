@@ -5,13 +5,13 @@ import (
 )
 
 type WriteBlocker struct {
-	w   io.Writer
+	W   io.Writer
 	end chan bool
 }
 
 func NewWriteBlocker(w io.Writer, notify <-chan bool) (wb *WriteBlocker) {
 	wb = &WriteBlocker{}
-	wb.w = w
+	wb.W = w
 	wb.end = make(chan bool)
 	go func() {
 		<-notify
@@ -21,7 +21,7 @@ func NewWriteBlocker(w io.Writer, notify <-chan bool) (wb *WriteBlocker) {
 }
 
 func (self *WriteBlocker) Write(p []byte) (n int, err error) {
-	n, err = self.w.Write(p)
+	n, err = self.W.Write(p)
 	if err != nil {
 		self.end <- true
 	}

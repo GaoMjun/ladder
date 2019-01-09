@@ -12,7 +12,7 @@ type FakeRequest struct {
 	host       string
 }
 
-func NewFakeRequest(host, token, originHeader, streamID string) (request *FakeRequest) {
+func NewFakeRequest(host, token, originHeader, streamID string, contentLength int64) (request *FakeRequest) {
 	request = &FakeRequest{}
 	request.host = host
 
@@ -25,6 +25,9 @@ func NewFakeRequest(host, token, originHeader, streamID string) (request *FakeRe
 	}
 	if len(streamID) > 0 {
 		request.fakeHeader += fmt.Sprint("Sid: ", streamID, "\r\n")
+	}
+	if contentLength > 0 {
+		request.fakeHeader += fmt.Sprint("Content-Length: ", contentLength, "\r\n")
 	}
 	request.fakeHeader += "\r\n"
 

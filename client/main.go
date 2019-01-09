@@ -101,7 +101,7 @@ func createChannel(remote Remote, channels *ladder.Channels, streamManager *ladd
 
 TRY:
 	token, _ = ladder.GenerateToken(user, pass)
-	fakeRequest = ladder.NewFakeRequest(host, token, "", "0")
+	fakeRequest = ladder.NewFakeRequest(host, token, "", "0", 0)
 
 	conn, err = fakeRequest.Do()
 	if err != nil {
@@ -115,7 +115,7 @@ TRY:
 		// goto TRY
 	}
 
-	handleConn(host, user, pass, comp, conn, channels, streamManager)
+	handleConn(host, user, pass, comp, ladder.NewChunckedReader(conn), channels, streamManager)
 
 	time.Sleep(time.Second * 3)
 	goto TRY

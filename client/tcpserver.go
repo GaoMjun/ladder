@@ -92,7 +92,7 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 			return
 		}
 
-		fakeRequest := ladder.NewFakeRequest(channel.host, token, originHeader, fmt.Sprint(streamID))
+		fakeRequest := ladder.NewFakeRequest(channel.host, token, originHeader, fmt.Sprint(streamID), request.HttpRequest.ContentLength)
 		c, err := fakeRequest.Do()
 		if err != nil {
 			return

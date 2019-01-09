@@ -13,6 +13,7 @@ func handleConn(host, user, pass string, comp bool, rc io.ReadCloser, channels *
 		err     error
 		backend *ladder.BackEnd
 		stream  = mux.NewStream(rc, nil)
+		frame   mux.Frame
 	)
 	defer func() {
 		if err != nil {
@@ -31,7 +32,7 @@ func handleConn(host, user, pass string, comp bool, rc io.ReadCloser, channels *
 	channels.AddBackEnd(backend)
 
 	for {
-		frame, err := stream.ReadFrame()
+		frame, err = stream.ReadFrame()
 		if err != nil {
 			break
 		}

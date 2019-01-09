@@ -5,10 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+
+	"github.com/GaoMjun/ladder/mux"
 
 	"github.com/GaoMjun/ladder"
 )
@@ -77,6 +81,8 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		tokenOk      bool
 		originHeader string
 		streamID     int
+		request      *ladder.Request
+		rc           io.ReadCloser
 	)
 	defer func() {
 		if err != nil {
@@ -147,8 +153,26 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get channel with streamid, then dial originHeader host and pipe
-	handleRequest(originHeader, self.channels)
+	be, err := self.channels.GetBackEnd()
+	if err != nil {
+		return
+	}
+	wb := be.V.(*ladder.WriteBlocker)
+
+	request, err = ladder.NewRequest(strings.NewReader(originHeader))
+	if err != nil {
+		return
+	}
+
+	rc = r.Body
+	if request.HttpRequest.ContentLength <= 0 {
+		rc = ladder.NewFakeReadCloser()
+	}
+
+	stream := mux.NewStream(rc, wb.W)
+	stream.SetID(uint16(streamID))
+
+	handleRequest(stream, request)
 }
 
 func handleFake(w http.ResponseWriter, r *http.Request) {

@@ -159,10 +159,14 @@ func handleStream(stream io.ReadWriteCloser) {
 	ladder.Pipe(stream, remote)
 }
 
-func handleRequest(originHeader string, channels *ladder.Channels) {
+func handleRequest(stream io.ReadWriteCloser, request *ladder.Request) {
 	var (
-		err     error
-		request *ladder.Request
+		err error
+
+		address string
+		conn    net.Conn
+		dialer  = &net.Dialer{Timeout: time.Second * 13}
+		remote  *ladder.ConnWithTimeout
 	)
 	defer func() {
 		if err != nil {
@@ -170,10 +174,21 @@ func handleRequest(originHeader string, channels *ladder.Channels) {
 		}
 	}()
 
-	request, err = ladder.NewRequest(strings.NewReader(originHeader))
+	address = request.HttpRequest.Host
+	if strings.Index(address, ":") == -1 {
+		address = address + ":80"
+	}
+	log.Println(address)
+
+	conn, err = dialer.Dial("tcp", address)
 	if err != nil {
 		return
 	}
+	remote = ladder.NewConnWithTimeout(conn)
 
-	
+	if request.HttpRequest.Method != "CONNECT" {
+		remote.Write(request.Bytes())
+	}
+
+	ladder.Pipe(stream, remote)
 }

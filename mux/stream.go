@@ -6,20 +6,27 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"net/http"
 )
 
 type Stream struct {
-	r   *bufio.Reader
-	w   *bufio.Writer
-	id  uint16
-	buf []byte
+	r    io.ReadCloser
+	w    io.Writer
+	bufr *bufio.Reader
+	id   uint16
+	buf  []byte
 }
 
-func NewStream(rd io.Reader, w io.Writer) (stream *Stream) {
+func NewStream(r io.ReadCloser, w io.Writer) (stream *Stream) {
 	stream = &Stream{}
+	stream.r = r
+	stream.w = w
+	stream.bufr = bufio.NewReader(r)
+	return
+}
 
-	stream.r = bufio.NewReader(rd)
-	stream.w = bufio.NewWriter(w)
+func (self *Stream) SetID(id uint16) {
+	self.id = id
 	return
 }
 
@@ -33,7 +40,7 @@ func (self *Stream) ReadFrame() (frame Frame, err error) {
 	)
 	frame = Frame{}
 
-	_, err = io.ReadFull(self.r, sig)
+	_, err = io.ReadFull(self.bufr, sig)
 	if err != nil {
 		return
 	}
@@ -43,7 +50,7 @@ func (self *Stream) ReadFrame() (frame Frame, err error) {
 	}
 	frame.Signature = SIGNATURE
 
-	_, err = io.ReadFull(self.r, ver)
+	_, err = io.ReadFull(self.bufr, ver)
 	if err != nil {
 		return
 	}
@@ -53,20 +60,20 @@ func (self *Stream) ReadFrame() (frame Frame, err error) {
 	}
 	frame.Version = VERSION
 
-	_, err = io.ReadFull(self.r, sid)
+	_, err = io.ReadFull(self.bufr, sid)
 	if err != nil {
 		return
 	}
 	frame.StreamID = binary.BigEndian.Uint16(sid)
 
-	_, err = io.ReadFull(self.r, len)
+	_, err = io.ReadFull(self.bufr, len)
 	if err != nil {
 		return
 	}
 	frame.Length = binary.BigEndian.Uint16(len)
 
 	data = make([]byte, frame.Length)
-	_, err = io.ReadFull(self.r, data)
+	_, err = io.ReadFull(self.bufr, data)
 	if err != nil {
 		return
 	}
@@ -110,6 +117,14 @@ func (self *Stream) WriteFrame(frame Frame) (err error) {
 	}
 
 	_, err = self.w.Write(frame.Data)
+	if err != nil {
+		return
+	}
+
+	if flusher, ok := self.w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+
 	return
 }
 
@@ -156,7 +171,7 @@ func (self *Stream) Write(data []byte) (n int, err error) {
 	return
 }
 
-func (self *Stream) Flush() (err error) {
-	err = self.w.Flush()
+func (self *Stream) Close() (err error) {
+	err = self.r.Close()
 	return
 }
