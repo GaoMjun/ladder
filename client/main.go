@@ -1,14 +1,11 @@
 package client
 
 import (
-	"bufio"
-	"crypto/md5"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"net/url"
 	"time"
 
@@ -22,7 +19,7 @@ func Run(args []string) {
 
 		config Config
 
-		channels = ladder.NewChannels()
+		channels      = ladder.NewChannels()
 		streamManager = ladder.NewStreamManager()
 	)
 	defer func() {
@@ -47,7 +44,7 @@ func Run(args []string) {
 
 	for _, remote := range config.Remotes {
 		for i := 0; i < remote.Channels; i++ {
-			go createChannel(remote, channels)
+			go createChannel(remote, channels, streamManager)
 		}
 	}
 
@@ -62,7 +59,7 @@ func Run(args []string) {
 	err = socksProxyServer.Run()
 }
 
-func createChannel(remote Remote, channels *ladder.Channels) {
+func createChannel(remote Remote, channels *ladder.Channels, streamManager *ladder.StreamManager) {
 	var (
 		err         error
 		user        = remote.User
@@ -72,10 +69,8 @@ func createChannel(remote Remote, channels *ladder.Channels) {
 		token       string
 		urlString   = remote.Host
 		u           *url.URL
-		key         = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
 		host        string
 		fakeRequest *ladder.FakeRequest
-		response    *http.Response
 	)
 	defer func() {
 		if err != nil {
@@ -111,15 +106,16 @@ TRY:
 	conn, err = fakeRequest.Do()
 	if err != nil {
 		log.Println(err)
-		goto TRY
-	}
-	response, err = http.ReadResponse(bufio.NewReader(conn), nil)
-	if err != nil {
-		log.Println(err)
-		goto TRY
+		// goto TRY
 	}
 
-	handleConn(comp, response.Body, channels)
+	_, err = ladder.NewResponse(conn)
+	if err != nil {
+		log.Println(err)
+		// goto TRY
+	}
+
+	handleConn(host, user, pass, comp, conn, channels, streamManager)
 
 	time.Sleep(time.Second * 3)
 	goto TRY

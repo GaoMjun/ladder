@@ -9,22 +9,22 @@ import (
 	"strings"
 )
 
-type Request struct {
-	RawLines    []string
-	HttpRequest *http.Request
+type Response struct {
+	RawLines     []string
+	HttpResponse *http.Response
 
 	rawString string
 	rawBytes  []byte
 }
 
-func NewRequest(r io.Reader) (request *Request, err error) {
+func NewResponse(r io.Reader) (response *Response, err error) {
 	var (
 		reader   = bufio.NewReader(r)
 		line     []byte
 		isPrefix bool
 	)
 
-	request = &Request{}
+	response = &Response{}
 
 	for {
 		line, isPrefix, err = reader.ReadLine()
@@ -37,14 +37,14 @@ func NewRequest(r io.Reader) (request *Request, err error) {
 			return
 		}
 
-		request.RawLines = append(request.RawLines, string(line))
+		response.RawLines = append(response.RawLines, string(line))
 
 		if len(line) == 0 {
 			break
 		}
 	}
 
-	err = request.Parse()
+	err = response.Parse()
 	if err != nil {
 		return
 	}
@@ -52,12 +52,12 @@ func NewRequest(r io.Reader) (request *Request, err error) {
 	return
 }
 
-func (self *Request) String() (s string) {
+func (self *Response) String() (s string) {
 	s = self.Dump()
 	return
 }
 
-func (self *Request) Dump() (s string) {
+func (self *Response) Dump() (s string) {
 	if len(self.rawString) > 0 {
 		s = self.rawString
 		return
@@ -70,12 +70,12 @@ func (self *Request) Dump() (s string) {
 	return
 }
 
-func (self *Request) DumpHex() (s string) {
+func (self *Response) DumpHex() (s string) {
 	s = hex.Dump([]byte(self.Dump()))
 	return
 }
 
-func (self *Request) Bytes() (bs []byte) {
+func (self *Response) Bytes() (bs []byte) {
 	if len(self.rawBytes) > 0 {
 		bs = self.rawBytes
 		return
@@ -87,12 +87,12 @@ func (self *Request) Bytes() (bs []byte) {
 	return
 }
 
-func (self *Request) Parse() (err error) {
-	r, err := http.ReadRequest(bufio.NewReader(strings.NewReader(self.Dump())))
+func (self *Response) Parse() (err error) {
+	r, err := http.ReadResponse(bufio.NewReader(strings.NewReader(self.Dump())), nil)
 	if err != nil {
 		return
 	}
 
-	self.HttpRequest = r
+	self.HttpResponse = r
 	return
 }

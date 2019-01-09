@@ -51,10 +51,11 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 	var (
 		err error
 
-		be       *ladder.BackEnd
-		request  *ladder.Request
-		streamID uint16
-		wc       io.WriteCloser
+		be           *ladder.BackEnd
+		request      *ladder.Request
+		streamID     uint16
+		wc           io.WriteCloser
+		originHeader string
 	)
 	defer func() {
 		conn.Close()
@@ -86,7 +87,12 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 			fmt.Fprint(conn, "HTTP/1.1 200 Connection established\r\n\r\n")
 		}
 
-		fakeRequest := ladder.NewFakeRequest(channel.host, token, request.Dump(), fmt.Sprint(streamID))
+		originHeader, err = ladder.EncryptHeader(request.Dump(), channel.user, channel.pass)
+		if err != nil {
+			return
+		}
+
+		fakeRequest := ladder.NewFakeRequest(channel.host, token, originHeader, fmt.Sprint(streamID))
 		c, err := fakeRequest.Do()
 		if err != nil {
 			return
@@ -94,7 +100,9 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 		wc = c.(io.WriteCloser)
 	}
 
-	
+	rc := self.streamManager.NewReceiveStream(streamID)
 
-	ladder.Pipe(conn, snappyStream)
+	stream := ladder.NewConnCombine(wc, rc)
+
+	ladder.Pipe(conn, stream)
 }

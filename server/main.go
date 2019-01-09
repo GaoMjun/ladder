@@ -19,6 +19,7 @@ type server struct {
 	pass     string
 	compress bool
 	key      [md5.Size]byte
+	channels *ladder.Channels
 }
 
 func Run(args []string) {
@@ -64,6 +65,7 @@ func Run(args []string) {
 	s.pass = *p
 	s.compress = *m
 	s.key = md5.Sum([]byte(fmt.Sprintf("%s:%s", s.user, s.pass)))
+	s.channels = ladder.NewChannels()
 
 	err = http.ListenAndServe(s.listen, http.HandlerFunc(s.handler))
 }
@@ -120,8 +122,19 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusOK)
 
-		handleConn(ladder.NewConnWithXor(ladder.NewConn(conn), self.key[:]), self.user, self.pass, self.compress)
-		// block
+		w.(http.Flusher).Flush()
+
+		wb := ladder.NewWriteBlocker(w, w.(http.CloseNotifier).CloseNotify())
+
+		be := ladder.NewBackEnd(wb)
+		self.channels.AddBackEnd(be)
+
+		log.Println("connected and block")
+		wb.Wait()
+		log.Println("disconnected")
+
+		self.channels.DelBackEnd(be)
+		return
 	}
 
 	originHeader = r.Header.Get("Header")
@@ -136,6 +149,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 
 	// get channel with streamid, then dial originHeader host and pipe
 
+	
 	handleFake(w, r)
 }
 
