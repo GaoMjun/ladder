@@ -148,9 +148,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get channel with streamid, then dial originHeader host and pipe
-
-	
-	handleFake(w, r)
+	handleRequest(originHeader, self.channels)
 }
 
 func handleFake(w http.ResponseWriter, r *http.Request) {

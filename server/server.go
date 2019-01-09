@@ -158,3 +158,22 @@ func handleStream(stream io.ReadWriteCloser) {
 
 	ladder.Pipe(stream, remote)
 }
+
+func handleRequest(originHeader string, channels *ladder.Channels) {
+	var (
+		err     error
+		request *ladder.Request
+	)
+	defer func() {
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	request, err = ladder.NewRequest(strings.NewReader(originHeader))
+	if err != nil {
+		return
+	}
+
+	
+}
