@@ -10,11 +10,7 @@ import (
 )
 
 func TestFakeRequest(t *testing.T) {
-	fakeRequest, err := NewFakeRequest("140.205.220.96:80", "token", "originHeader", "streamID")
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	fakeRequest := NewFakeRequest("140.205.220.96:80", "token", "originHeader", "streamID", 0)
 
 	conn, err := fakeRequest.Do()
 	if err != nil {

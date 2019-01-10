@@ -8,7 +8,7 @@ import (
 	"github.com/GaoMjun/ladder/mux"
 )
 
-func handleConn(host, user, pass string, comp bool, rc io.ReadCloser, channels *ladder.Channels, streamManager *ladder.StreamManager) {
+func handleConn(host, user, pass string, comp bool, stream io.ReadWriteCloser, channels *ladder.Channels, streamManager *ladder.StreamManager) {
 	var (
 		err     error
 		backend *ladder.BackEnd

@@ -11,13 +11,13 @@ import (
 
 type Stream struct {
 	r    io.ReadCloser
-	w    io.Writer
+	w    io.WriteCloser
 	bufr *bufio.Reader
 	id   uint16
 	buf  []byte
 }
 
-func NewStream(r io.ReadCloser, w io.Writer) (stream *Stream) {
+func NewStream(r io.ReadCloser, w io.WriteCloser) (stream *Stream) {
 	stream = &Stream{}
 	stream.r = r
 	stream.w = w
@@ -173,5 +173,13 @@ func (self *Stream) Write(data []byte) (n int, err error) {
 
 func (self *Stream) Close() (err error) {
 	err = self.r.Close()
+	if err != nil {
+		return
+	}
+
+	err = self.w.Close()
+	if err != nil {
+		return
+	}
 	return
 }

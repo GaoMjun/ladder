@@ -71,6 +71,8 @@ func createChannel(remote Remote, channels *ladder.Channels, streamManager *ladd
 		u           *url.URL
 		host        string
 		fakeRequest *ladder.FakeRequest
+		httpStream  *ladder.HTTPStream
+		streamID    uint16
 	)
 	defer func() {
 		if err != nil {
@@ -101,21 +103,42 @@ func createChannel(remote Remote, channels *ladder.Channels, streamManager *ladd
 
 TRY:
 	token, _ = ladder.GenerateToken(user, pass)
-	fakeRequest = ladder.NewFakeRequest(host, token, "", "0", 0)
 
-	conn, err = fakeRequest.Do()
+	streamID, err = streamManager.GenerateStreamID()
 	if err != nil {
 		log.Println(err)
-		// goto TRY
+		time.Sleep(time.Second * 3)
+		goto TRY
 	}
 
-	_, err = ladder.NewResponse(conn)
+	httpStream = &ladder.HTTPStream{}
+	httpStream.Host = host
+	httpStream.AddHeader("Token", token)
+	httpStream.AddHeader("Sid", fmt.Sprint(streamID))
+
+	err = httpStream.Open(u.String())
 	if err != nil {
+		streamManager.RemoveStreamID(streamID)
 		log.Println(err)
-		// goto TRY
+		time.Sleep(time.Second * 3)
+		goto TRY
 	}
 
-	handleConn(host, user, pass, comp, ladder.NewChunckedReader(conn), channels, streamManager)
+	// fakeRequest = ladder.NewFakeRequest(host, token, "", "0", 0)
+
+	// conn, err = fakeRequest.Do()
+	// if err != nil {
+	// 	log.Println(err)
+	// 	// goto TRY
+	// }
+
+	// _, err = ladder.NewResponse(conn)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	// goto TRY
+	// }
+
+	handleConn(host, user, pass, comp, httpStream, channels, streamManager)
 
 	time.Sleep(time.Second * 3)
 	goto TRY
