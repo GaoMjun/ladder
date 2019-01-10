@@ -66,7 +66,7 @@ func createChannel(remote Remote, channels *ladder.Channels) {
 		user      = remote.User
 		pass      = remote.Pass
 		comp      = remote.Compress
-		conn      *websocket.Conn
+		conn      *ladder.HTTPStream
 		token     string
 		header    = map[string][]string{}
 		dialer    = &websocket.Dialer{HandshakeTimeout: time.Second * 5, ReadBufferSize: 1024, WriteBufferSize: 1024}

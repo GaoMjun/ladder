@@ -1,10 +1,12 @@
-package ladder
+package httpstream
 
 import (
 	"log"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/GaoMjun/ladder"
 )
 
 func init() {
@@ -23,43 +25,12 @@ func TestStream(t *testing.T) {
 	}()
 
 	go http.ListenAndServe("127.0.0.1:8888", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			buffer := make([]byte, 1024)
-			for {
-				n, err := r.Body.Read(buffer)
-				if err != nil {
-					return
-				}
 
-				// log.Println(string(buffer[:n]))
-				if string(buffer[:n]) == "ping" {
-					log.Println("pong")
-				}
-			}
-		}
-
-		if r.Method == "GET" {
-			w.Header().Set("Content-Type", "octet-stream")
-			w.Header().Set("Transfer-Encoding", "chunked")
-			w.WriteHeader(http.StatusOK)
-			w.(http.Flusher).Flush()
-
-			// wc := httputil.NewChunkedWriter(w)
-			for {
-				_, err := w.Write([]byte("ping"))
-				if err != nil {
-					return
-				}
-				w.(http.Flusher).Flush()
-				log.Println("ping")
-
-				time.Sleep(time.Second * 1)
-			}
-		}
 	}))
 
 	time.Sleep(time.Second * 3)
 
+	dialer = &Dialer{}
 	stream, err = OpenStream("http://127.0.0.1:8888/")
 	if err != nil {
 		return
@@ -96,5 +67,5 @@ func TestStream(t *testing.T) {
 	// 	time.Sleep(time.Second * 1)
 	// }
 
-	Pipe(stream, stream)
+	ladder.Pipe(stream, stream)
 }
