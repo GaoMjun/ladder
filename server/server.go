@@ -123,7 +123,7 @@ func handleStream(stream io.ReadWriteCloser) {
 		address string
 		conn    net.Conn
 		remote  *ladder.ConnWithTimeout
-		dialer  = &net.Dialer{Timeout: time.Second * 3}
+		dialer  = &net.Dialer{Timeout: time.Second * 13}
 	)
 	defer func() {
 		stream.Close()

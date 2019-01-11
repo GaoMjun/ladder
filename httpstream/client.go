@@ -13,16 +13,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/GaoMjun/ladder"
 )
 
 type Dialer struct {
 	NetDial func(network, addr string) (net.Conn, error)
 	Timeout time.Duration
 
-	upConn   *ladder.ConnWithTimeout
-	downConn *ladder.ConnWithTimeout
+	upConn   net.Conn
+	downConn net.Conn
 }
 
 func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err error) {
@@ -75,9 +73,10 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 	header["HTTPStream-Key"] = []string{key}
 
 	var (
-		wg = &sync.WaitGroup{}
-		w  io.WriteCloser
-		r  io.ReadCloser
+		wg         = &sync.WaitGroup{}
+		w          io.WriteCloser
+		r          io.ReadCloser
+		remoteAddr net.Addr
 	)
 	defer func() {
 		if err != nil {
@@ -102,7 +101,7 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 			wg.Done()
 		}()
 
-		w, err = self.openUp(u, header)
+		w, remoteAddr, err = self.openUp(u, header)
 		if err != nil {
 			return
 		}
@@ -120,7 +119,7 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 			wg.Done()
 		}()
 
-		r, err = self.openDown(u, header)
+		r, _, err = self.openDown(u, header)
 		if err != nil {
 			return
 		}
@@ -136,10 +135,11 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 	conn = &Conn{}
 	conn.w = w
 	conn.r = r
+	conn.remoteAddr = remoteAddr
 	return
 }
 
-func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, err error) {
+func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, remoteAddr net.Addr, err error) {
 	var (
 		request       *http.Request
 		requestHeader string
@@ -176,8 +176,9 @@ func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, er
 	if err != nil {
 		return
 	}
+	remoteAddr = netConn.RemoteAddr()
 
-	self.upConn = &ladder.ConnWithTimeout{Conn: netConn, Timeout: self.Timeout}
+	self.upConn = netConn
 
 	_, err = self.upConn.Write(bs)
 	if err != nil {
@@ -188,7 +189,7 @@ func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, er
 	return
 }
 
-func (self *Dialer) openDown(u *url.URL, header http.Header) (r io.ReadCloser, err error) {
+func (self *Dialer) openDown(u *url.URL, header http.Header) (r io.ReadCloser, remoteAddr net.Addr, err error) {
 	var (
 		request       *http.Request
 		requestHeader string
@@ -224,8 +225,9 @@ func (self *Dialer) openDown(u *url.URL, header http.Header) (r io.ReadCloser, e
 	if err != nil {
 		return
 	}
+	remoteAddr = netConn.RemoteAddr()
 
-	self.downConn = &ladder.ConnWithTimeout{Conn: netConn, Timeout: self.Timeout}
+	self.downConn = netConn
 
 	_, err = self.downConn.Write(bs)
 	if err != nil {

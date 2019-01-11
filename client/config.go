@@ -25,6 +25,7 @@ type Remote struct {
 	User     string
 	Pass     string
 	Compress bool
+	Mode     string
 }
 
 func NewConfig(filename string) (config Config, err error) {

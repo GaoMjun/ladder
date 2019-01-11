@@ -27,11 +27,7 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(r.Header["Httpstream-Key"]) <= 0 {
-		return
-	}
-
-	key := r.Header["Httpstream-Key"][0]
+	key := r.Header.Get("Httpstream-Key")
 	if len(key) <= 0 {
 		return
 	}

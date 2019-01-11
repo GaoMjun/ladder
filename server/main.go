@@ -9,19 +9,28 @@ import (
 	"net/http"
 	"os"
 
+	// _ "net/http/pprof"
+
 	"github.com/GaoMjun/ladder"
+	"github.com/GaoMjun/ladder/httpstream"
 	"github.com/gorilla/websocket"
 )
 
 type server struct {
-	listen   string
-	user     string
-	pass     string
-	compress bool
-	key      [md5.Size]byte
+	listen     string
+	user       string
+	pass       string
+	compress   bool
+	key        [md5.Size]byte
+	wsUpgrader websocket.Upgrader
+	hsUpgrader *httpstream.Upgrader
 }
 
 func Run(args []string) {
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6061", nil))
+	// }()
+
 	var (
 		err   error
 		flags = flag.NewFlagSet("server", flag.ContinueOnError)
@@ -64,23 +73,32 @@ func Run(args []string) {
 	s.pass = *p
 	s.compress = *m
 	s.key = md5.Sum([]byte(fmt.Sprintf("%s:%s", s.user, s.pass)))
+	s.hsUpgrader = httpstream.NewUpgrader()
+	s.wsUpgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
 
-	err = http.ListenAndServe(s.listen, http.HandlerFunc(s.handler))
+	go func() {
+		err = http.ListenAndServe(s.listen, http.HandlerFunc(s.handler))
+		log.Panicln(err)
+	}()
+
+	for {
+		conn := s.hsUpgrader.Accept()
+		go s.handleHSConn(conn)
+	}
 }
 
 func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 	var (
-		err      error
-		token    string
-		tokenOk  bool
-		conn     *websocket.Conn
-		upgrader = websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool {
-				return true
-			},
-		}
+		err     error
+		token   string
+		tokenOk bool
+		conn    *websocket.Conn
 	)
 	defer func() {
 		if err != nil {
@@ -105,7 +123,13 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err = upgrader.Upgrade(w, r, nil)
+	hsKey := r.Header.Get("Httpstream-Key")
+	if len(hsKey) > 0 {
+		self.hsUpgrader.Upgrade(w, r)
+		return
+	}
+
+	conn, err = self.wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
@@ -115,4 +139,8 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 
 func handleFake(w http.ResponseWriter, r *http.Request) {
 	w.Write(index)
+}
+
+func (self *server) handleHSConn(conn *httpstream.Conn) {
+	handleConn(ladder.NewConnWithXor(conn, self.key[:]), self.user, self.pass, self.compress)
 }

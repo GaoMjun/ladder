@@ -2,11 +2,14 @@ package httpstream
 
 import (
 	"io"
+	"net"
+	"time"
 )
 
 type Conn struct {
-	r io.ReadCloser
-	w io.WriteCloser
+	r          io.ReadCloser
+	w          io.WriteCloser
+	remoteAddr net.Addr
 }
 
 func (self *Conn) Read(p []byte) (n int, err error) {
@@ -30,4 +33,24 @@ func (self *Conn) Close() (err error) {
 		return
 	}
 	return
+}
+
+func (self *Conn) LocalAddr() net.Addr {
+	return nil
+}
+
+func (self *Conn) RemoteAddr() net.Addr {
+	return self.remoteAddr
+}
+
+func (self *Conn) SetReadDeadline(t time.Time) error {
+	return nil
+}
+
+func (self *Conn) SetWriteDeadline(t time.Time) error {
+	return nil
+}
+
+func (self *Conn) SetDeadline(t time.Time) error {
+	return nil
 }
