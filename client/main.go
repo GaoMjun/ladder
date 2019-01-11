@@ -83,7 +83,7 @@ func createWSChannel(remote Remote, channels *ladder.Channels) {
 		urlString = remote.Host
 		u         *url.URL
 		key       = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
-		reconnect = 1
+		reconnect = 0
 	)
 	defer func() {
 		if err != nil {
@@ -152,7 +152,7 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 		comp      = remote.Compress
 		key       = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
 		conn      *httpstream.Conn
-		reconnect = 1
+		reconnect = 0
 	)
 	defer func() {
 		if err != nil {
@@ -197,7 +197,7 @@ TRY:
 }
 
 func reconnectDuration(d1 int) (d2 int) {
-	if d1 <= 1 {
+	if d1 < 1 {
 		d2 = 1
 		return
 	}
