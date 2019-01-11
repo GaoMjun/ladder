@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/GaoMjun/ladder/httpstream"
 
 	"github.com/GaoMjun/ladder"
 	"github.com/gorilla/websocket"
@@ -45,7 +48,14 @@ func Run(args []string) {
 
 	for _, remote := range config.Remotes {
 		for i := 0; i < remote.Channels; i++ {
-			go createChannel(remote, channels)
+			switch remote.Mode {
+			case "ws":
+				go createWSChannel(remote, channels)
+			case "hs":
+				go createHSChannel(remote, channels)
+			default:
+				go createWSChannel(remote, channels)
+			}
 		}
 	}
 
@@ -60,7 +70,7 @@ func Run(args []string) {
 	err = socksProxyServer.Run()
 }
 
-func createChannel(remote Remote, channels *ladder.Channels) {
+func createWSChannel(remote Remote, channels *ladder.Channels) {
 	var (
 		err       error
 		user      = remote.User
@@ -129,6 +139,61 @@ TRY:
 	reconnect = reconnectDuration(reconnect)
 	time.Sleep(time.Second * time.Duration(reconnect))
 	goto TRY
+}
+
+func createHSChannel(remote Remote, channels *ladder.Channels) {
+	var (
+		err       error
+		dialer    = &httpstream.Dialer{}
+		header    = http.Header{}
+		token     string
+		user      = remote.User
+		pass      = remote.Pass
+		comp      = remote.Compress
+		key       = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
+		conn      *httpstream.Conn
+		reconnect = 1
+	)
+	defer func() {
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	if len(remote.IP) > 0 {
+		dialer.NetDial = func(network, addr string) (net.Conn, error) {
+			return net.Dial(network, remote.IP)
+		}
+	}
+
+	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
+
+TRY:
+	token, _ = ladder.GenerateToken(user, pass)
+	header["Token"] = []string{token}
+
+	if conn != nil {
+		conn.Close()
+		conn = nil
+	}
+	conn, err = dialer.Dial(remote.Host, header)
+	if err != nil {
+		log.Println(err)
+
+		reconnect = reconnectDuration(reconnect)
+		time.Sleep(time.Second * time.Duration(reconnect))
+		goto TRY
+	}
+	log.Println("connected to ", remote.Host)
+
+	handleConn(user, pass, comp, ladder.NewConnWithXor(conn, key[:]), channels, func() {
+		reconnect = 1
+	})
+
+	reconnect = reconnectDuration(reconnect)
+	time.Sleep(time.Second * time.Duration(reconnect))
+	goto TRY
+
 }
 
 func reconnectDuration(d1 int) (d2 int) {
