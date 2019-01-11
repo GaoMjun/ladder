@@ -29,17 +29,19 @@ type nopHttpResponseWriteCloser struct {
 	w http.ResponseWriter
 }
 
-func (self nopHttpResponseWriteCloser) Write(p []byte) (n int, err error) {
+func (self *nopHttpResponseWriteCloser) Write(p []byte) (n int, err error) {
 	n, err = self.w.Write(p)
 	if err != nil {
 		return
 	}
-	self.w.(http.Flusher).Flush()
+	if flusher, ok := self.w.(http.Flusher); ok {
+		flusher.Flush()
+	}
 	return
 }
 
-func (nopHttpResponseWriteCloser) Close() error { return nil }
+func (*nopHttpResponseWriteCloser) Close() error { return nil }
 
 func NopHttpResponseWriteCloser(w http.ResponseWriter) (wc io.WriteCloser) {
-	return nopHttpResponseWriteCloser{w}
+	return &nopHttpResponseWriteCloser{w}
 }

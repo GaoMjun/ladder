@@ -103,7 +103,7 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 			wg.Done()
 		}()
 
-		w, remoteAddr, err = self.openUp(u, header)
+		w, _, err = self.openUp(u, header)
 		if err != nil {
 			return
 		}
@@ -121,7 +121,7 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 			wg.Done()
 		}()
 
-		r, _, err = self.openDown(u, header)
+		r, remoteAddr, err = self.openDown(u, header)
 		if err != nil {
 			return
 		}
