@@ -26,6 +26,8 @@ type Remote struct {
 	Pass     string
 	Compress bool
 	Mode     string
+	UpHost   string
+	UpIP     string
 }
 
 func NewConfig(filename string) (config Config, err error) {

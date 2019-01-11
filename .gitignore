@@ -1,5 +1,6 @@
 .vscode
 client/config.jsonc
+client/config_test.jsonc
 main/ladder
 heroku
 main/Dockerfile

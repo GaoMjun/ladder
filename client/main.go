@@ -166,6 +166,16 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 		}
 	}
 
+	if len(remote.UpHost) > 0 {
+		dialer.UpHost = remote.UpHost
+	}
+
+	if len(remote.UpIP) > 0 {
+		dialer.UpNetDial = func(network, addr string) (net.Conn, error) {
+			return net.Dial(network, remote.UpIP)
+		}
+	}
+
 	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
 
 TRY:

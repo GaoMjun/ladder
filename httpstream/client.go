@@ -16,8 +16,10 @@ import (
 )
 
 type Dialer struct {
-	NetDial func(network, addr string) (net.Conn, error)
-	Timeout time.Duration
+	NetDial   func(network, addr string) (net.Conn, error)
+	UpNetDial func(network, addr string) (net.Conn, error)
+	Timeout   time.Duration
+	UpHost    string
 
 	upConn   net.Conn
 	downConn net.Conn
@@ -145,10 +147,15 @@ func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, re
 		requestHeader string
 		bs            []byte
 		netConn       net.Conn
+		host          = u.Host
 	)
 
+	if len(self.UpHost) > 0 {
+		host = self.UpHost
+	}
+
 	requestHeader += fmt.Sprintf("POST %s HTTP/1.1\r\n", u.Path)
-	requestHeader += fmt.Sprintf("Host: %s\r\n", u.Host)
+	requestHeader += fmt.Sprintf("Host: %s\r\n", host)
 	requestHeader += fmt.Sprintf("Content-Type: %s\r\n", "octet-stream")
 	requestHeader += fmt.Sprintf("Transfer-Encoding: %s\r\n", "chunked")
 
@@ -172,10 +179,15 @@ func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, re
 	}
 	// fmt.Println(string(bs))
 
-	netConn, err = self.NetDial("tcp", u.Host)
+	if self.UpNetDial != nil {
+		netConn, err = self.UpNetDial("tcp", host)
+	} else {
+		netConn, err = self.NetDial("tcp", host)
+	}
 	if err != nil {
 		return
 	}
+
 	remoteAddr = netConn.RemoteAddr()
 
 	self.upConn = netConn
