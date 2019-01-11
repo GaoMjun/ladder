@@ -45,6 +45,10 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 		}
 	}
 
+	if header == nil {
+		header = http.Header{}
+	}
+
 	if v, ok := header["Host"]; ok {
 		u.Host = v[0]
 	}

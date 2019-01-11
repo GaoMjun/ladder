@@ -15,8 +15,10 @@ func init() {
 
 func TestStream(t *testing.T) {
 	var (
-		err    error
-		stream *HTTPStream
+		err      error
+		conn     *Conn
+		dialer   = &Dialer{}
+		upgrader = NewUpgrader()
 	)
 	defer func() {
 		if err != nil {
@@ -25,47 +27,56 @@ func TestStream(t *testing.T) {
 	}()
 
 	go http.ListenAndServe("127.0.0.1:8888", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		upgrader.Upgrade(w, r)
 	}))
 
 	time.Sleep(time.Second * 3)
 
-	dialer = &Dialer{}
-	stream, err = OpenStream("http://127.0.0.1:8888/")
+	conn, err = dialer.Dial("http://127.0.0.1:8888/", nil)
 	if err != nil {
 		return
 	}
+	log.Println("connected")
 
-	// go func() {
-	// 	var (
-	// 		err    error
-	// 		n      int
-	// 		buffer = make([]byte, 1024)
-	// 	)
-	// 	defer func() {
-	// 		if err != nil {
-	// 			log.Println(err)
-	// 		}
-	// 	}()
+	go func() {
+		var (
+			err    error
+			n      int
+			buffer = make([]byte, 1024)
+		)
+		defer func() {
+			if err != nil {
+				log.Println(err)
+			}
+		}()
 
-	// 	for {
-	// 		n, err = stream.Read(buffer)
-	// 		if err != nil {
-	// 			return
-	// 		}
-	// 		log.Println(string(buffer[:n]))
-	// 	}
-	// }()
+		for {
+			n, err = conn.Read(buffer)
+			if err != nil {
+				return
+			}
+			log.Println(string(buffer[:n]))
+		}
+	}()
 
-	// for {
-	// 	_, err = stream.Write([]byte("ping"))
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// 	// log.Println("ping to")
+	go func() {
+		for {
+			_, err = conn.Write([]byte("ping"))
+			if err != nil {
+				return
+			}
+			log.Println("ping to")
 
-	// 	time.Sleep(time.Second * 1)
-	// }
+			time.Sleep(time.Second * 1)
+		}
+	}()
 
+	for {
+		stream := upgrader.Accept()
+		go handleStream(stream)
+	}
+}
+
+func handleStream(stream *Conn) {
 	ladder.Pipe(stream, stream)
 }

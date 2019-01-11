@@ -13,25 +13,35 @@ type Upgrader struct {
 	connCh       chan *Conn
 }
 
+func NewUpgrader() (u *Upgrader) {
+	u = &Upgrader{}
+	u.readStreams = map[string]io.ReadCloser{}
+	u.writeStreams = map[string]io.WriteCloser{}
+	u.locker = &sync.RWMutex{}
+	u.connCh = make(chan *Conn)
+	return
+}
+
 func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" || r.Method != "GET" {
+	if r.Method != "POST" && r.Method != "GET" {
 		return
 	}
 
-	if len(r.Header["HTTPStream-Key"]) <= 0 {
+	if len(r.Header["Httpstream-Key"]) <= 0 {
 		return
 	}
 
-	var (
-		key = r.Header["HTTPStream-Key"][0]
-	)
+	key := r.Header["Httpstream-Key"][0]
+	if len(key) <= 0 {
+		return
+	}
 
 	if r.Method == "POST" {
-		w := self.getWriteStream(key)
-		if w == nil {
+		ws := self.getWriteStream(key)
+		if ws == nil {
 			self.addReadStream(key, r.Body)
 		} else {
-			self.connCh <- &Conn{r: r.Body, w: w}
+			self.connCh <- &Conn{r: r.Body, w: ws}
 		}
 	}
 
@@ -41,11 +51,11 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.(http.Flusher).Flush()
 
-		r := self.getReadStream(key)
-		if r == nil {
-			self.addWriteStream(key, NopWriteCloser(w))
+		rs := self.getReadStream(key)
+		if rs == nil {
+			self.addWriteStream(key, NopHttpResponseWriteCloser(w))
 		} else {
-			self.connCh <- &Conn{r: r, w: NopWriteCloser(w)}
+			self.connCh <- &Conn{r: rs, w: NopHttpResponseWriteCloser(w)}
 		}
 	}
 
