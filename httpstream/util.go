@@ -3,9 +3,19 @@ package httpstream
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
 )
+
+func randomBoundary() string {
+	var buf [30]byte
+	_, err := io.ReadFull(rand.Reader, buf[:])
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", buf[:])
+}
 
 func generateChallengeKey() (string, error) {
 	p := make([]byte, 16)
@@ -39,7 +49,9 @@ func (self nopHttpResponseWriteCloser) Write(p []byte) (n int, err error) {
 }
 
 func (self nopHttpResponseWriteCloser) Close() error {
-	self.w.(http.Flusher).Flush()
+	// if flusher, ok := self.w.(http.Flusher); ok {
+	// 	flusher.Flush()
+	// }
 	return nil
 }
 
