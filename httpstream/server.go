@@ -1,6 +1,8 @@
 package httpstream
 
 import (
+	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -33,6 +35,32 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
+		mr, err := r.MultipartReader()
+		if err != nil {
+			return
+		}
+		for {
+		NEXT:
+			part, err := mr.NextPart()
+			if err != nil {
+				return
+			}
+
+			buffer := make([]byte, 4096)
+			for {
+				n, err := part.Read(buffer)
+				if err != nil {
+					if err == io.EOF {
+						goto NEXT
+					}
+					return
+				}
+
+				fmt.Print(hex.Dump(buffer[:n]))
+			}
+
+		}
+
 		ws := self.getWriteStream(key)
 		if ws == nil {
 			self.addReadStream(key, r.Body)
@@ -42,7 +70,7 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		w.Header().Set("Content-Type", "octet-stream")
+		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Transfer-Encoding", "chunked")
 		w.WriteHeader(http.StatusOK)
 		w.(http.Flusher).Flush()
