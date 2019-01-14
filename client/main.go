@@ -17,14 +17,25 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+func RunWithJsonString(jsonString string) {
+	var (
+		err    error
+		config Config
+	)
+
+	config, err = NewConfigWithJsonString(jsonString)
+	if err != nil {
+		return
+	}
+
+	err = run(config)
+}
+
 func Run(args []string) {
 	var (
-		err   error
-		flags = flag.NewFlagSet("client", flag.ContinueOnError)
-
+		err    error
+		flags  = flag.NewFlagSet("client", flag.ContinueOnError)
 		config Config
-
-		channels = ladder.NewChannels()
 	)
 	defer func() {
 		if err != nil {
@@ -44,7 +55,16 @@ func Run(args []string) {
 	if err != nil {
 		return
 	}
+
+	err = run(config)
+}
+
+func run(config Config) (err error) {
 	fmt.Println(config)
+
+	var (
+		channels = ladder.NewChannels()
+	)
 
 	for _, remote := range config.Remotes {
 		for i := 0; i < remote.Channels; i++ {
@@ -68,6 +88,7 @@ func Run(args []string) {
 	}()
 
 	err = socksProxyServer.Run()
+	return
 }
 
 func createWSChannel(remote Remote, channels *ladder.Channels) {

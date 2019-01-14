@@ -1,0 +1,8 @@
+framework module "Ladderclient" {
+	header "ref.h"
+    header "Ladderclient.objc.h"
+    header "universe.objc.h"
+    header "Ladderclient.h"
+
+    export *
+}

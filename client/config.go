@@ -30,7 +30,7 @@ type Remote struct {
 	UpIP     string
 }
 
-func NewConfig(filename string) (config Config, err error) {
+func NewConfigWithJsonString(jsonString string) (config Config, err error) {
 	var (
 		confString string
 		allRemote  = []Remote{}
@@ -38,7 +38,53 @@ func NewConfig(filename string) (config Config, err error) {
 		locker     = &sync.Mutex{}
 	)
 
-	confString, err = prepareConfig(filename)
+	confString, err = prepareConfig(jsonString)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal([]byte(confString), &config)
+	if err != nil {
+		return
+	}
+
+	for _, remote := range config.Remotes {
+		wg.Add(1)
+		go func(remote Remote) {
+			defer wg.Done()
+
+			rs := prepareRemote(remote)
+
+			locker.Lock()
+			allRemote = append(allRemote, rs...)
+			locker.Unlock()
+
+		}(remote)
+	}
+
+	wg.Wait()
+
+	config.Remotes = allRemote
+	return
+}
+
+func NewConfig(filename string) (config Config, err error) {
+	var (
+		confString string
+		allRemote  = []Remote{}
+		wg         = &sync.WaitGroup{}
+		locker     = &sync.Mutex{}
+		confBytes  []byte
+		jsonString string
+	)
+
+	confBytes, err = ioutil.ReadFile(filename)
+	if err != nil {
+		return
+	}
+	jsonString = string(confBytes)
+
+	confString, err = prepareConfig(jsonString)
 	if err != nil {
 		return
 	}
@@ -129,18 +175,12 @@ func prepareRemote(remote Remote) (remotes []Remote) {
 	return
 }
 
-func prepareConfig(confPath string) (conf string, err error) {
+func prepareConfig(jsonString string) (conf string, err error) {
 	var (
-		confBytes []byte
-		re        *regexp.Regexp
+		re *regexp.Regexp
 	)
 
-	confBytes, err = ioutil.ReadFile(confPath)
-	if err != nil {
-		return
-	}
-
-	conf = string(confBytes)
+	conf = jsonString
 
 	re, err = regexp.Compile(`\s+//.*`)
 	if err != nil {
