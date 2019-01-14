@@ -105,10 +105,10 @@ func handleRequests(reqs <-chan *ssh.Request) {
 	for r := range reqs {
 		switch r.Type {
 		case "ping":
-			// err := r.Reply(true, nil)
-			// if err != nil {
-			// 	log.Println(err)
-			// }
+			err := r.Reply(true, nil)
+			if err != nil {
+				log.Println(err)
+			}
 			log.Println("ping keepalive")
 		default:
 			log.Println(r)

@@ -31,6 +31,7 @@ func (self *FormDataWriter) Write(p []byte) (n int, err error) {
 	fmt.Fprint(self.bufw, fmt.Sprint("--", self.boundary, "\r\n"))
 	fmt.Fprint(self.bufw, "Content-Disposition: form-data; name=\"upload\"; filename=\"blob\"\r\n")
 	fmt.Fprint(self.bufw, "Content-Type: application/octet-stream\r\n")
+	fmt.Fprint(self.bufw, "Content-Transfer-Encoding: binary\r\n")
 	fmt.Fprint(self.bufw, "\r\n")
 
 	self.bufw.Write(p)

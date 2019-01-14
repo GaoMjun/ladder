@@ -143,12 +143,12 @@ func (self *Dialer) Dial(rawurl string, header http.Header) (conn *Conn, err err
 
 func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, remoteAddr net.Addr, err error) {
 	var (
-		request        *http.Request
-		requestHeader  string
-		bs             []byte
-		netConn        net.Conn
-		host           = u.Host
-		formDataWriter = NewFormDataWriter()
+		request       *http.Request
+		requestHeader string
+		bs            []byte
+		netConn       net.Conn
+		host          = u.Host
+		// formDataWriter = NewFormDataWriter()
 	)
 
 	if len(self.UpHost) > 0 {
@@ -157,9 +157,12 @@ func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, re
 
 	requestHeader += fmt.Sprintf("POST %s HTTP/1.1\r\n", u.Path)
 	requestHeader += fmt.Sprintf("Host: %s\r\n", host)
-	requestHeader += fmt.Sprintf("Content-Type: %s\r\n", formDataWriter.FormDataContentType())
-	// requestHeader += fmt.Sprintf("Content-Type: %s\r\n", "application/octet-stream")
-	// requestHeader += fmt.Sprintf("Transfer-Encoding: %s\r\n", "chunked")
+	requestHeader += fmt.Sprintf("Connection: %s\r\n", "keep-alive")
+	// requestHeader += fmt.Sprintf("Content-Type: %s\r\n", formDataWriter.FormDataContentType())
+	requestHeader += fmt.Sprintf("Content-Type: %s\r\n", "application/octet-stream")
+	requestHeader += fmt.Sprintf("Transfer-Encoding: %s\r\n", "chunked")
+	requestHeader += fmt.Sprintf("Cache-Control: %s\r\n", "no-cache")
+	requestHeader += fmt.Sprintf("X-Accel-Buffering: %s\r\n", "no")
 
 	for k, vs := range header {
 		if k == "Host" || k == "Content-Type" || k == "Transfer-Encoding" {
@@ -199,9 +202,9 @@ func (self *Dialer) openUp(u *url.URL, header http.Header) (w io.WriteCloser, re
 		return
 	}
 
-	// w = NewChunckedWriter(self.upConn)
-	formDataWriter.SetWriter(self.upConn)
-	w = formDataWriter
+	w = NewChunckedWriter(self.upConn)
+	// formDataWriter.SetWriter(self.upConn)
+	// w = formDataWriter
 	return
 }
 
@@ -216,6 +219,9 @@ func (self *Dialer) openDown(u *url.URL, header http.Header) (r io.ReadCloser, r
 
 	requestHeader += fmt.Sprintf("GET %s HTTP/1.1\r\n", u.Path)
 	requestHeader += fmt.Sprintf("Host: %s\r\n", u.Host)
+	requestHeader += fmt.Sprintf("Connection: %s\r\n", "keep-alive")
+	requestHeader += fmt.Sprintf("Cache-Control: %s\r\n", "no-cache")
+	requestHeader += fmt.Sprintf("X-Accel-Buffering: %s\r\n", "no")
 
 	for k, vs := range header {
 		if k == "Host" {

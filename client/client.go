@@ -55,7 +55,7 @@ func handleConn(user, pass string, comp bool, conn net.Conn, channels *ladder.Ch
 
 	repeater = goutils.NewRepeater(time.Second*30, func() {
 		if sshConn != nil {
-			_, _, err := sshConn.SendRequest("ping", false, nil)
+			_, _, err := sshConn.SendRequest("ping", true, nil)
 			if err != nil {
 				log.Println(err)
 			}
