@@ -1,5 +1,7 @@
 FROM golang:alpine AS builder
 
+LABEL maintainer "mannixgao <jun2675731483@gmail.com>"
+
 RUN apk add --no-cache git && \
     go get github.com/GaoMjun/ladder && \
     cd /go/src/github.com/GaoMjun/ladder/main && \
