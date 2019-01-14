@@ -194,10 +194,10 @@ TRY:
 		time.Sleep(time.Second * time.Duration(reconnect))
 		goto TRY
 	}
-	log.Println("connected to ", remote.Host)
 
 	handleConn(user, pass, comp, ladder.NewConnWithXor(conn, key[:]), channels, func() {
 		reconnect = 1
+		log.Println("connected to ", remote.Host)
 	})
 
 	reconnect = reconnectDuration(reconnect)
