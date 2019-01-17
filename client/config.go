@@ -13,9 +13,10 @@ import (
 )
 
 type Config struct {
-	HttpListen  string
-	SocksListen string
-	Remotes     []Remote
+	HttpListen          string
+	SocksListen         string
+	IPTransparentListen string
+	Remotes             []Remote
 }
 
 type Remote struct {

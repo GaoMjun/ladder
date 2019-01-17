@@ -81,6 +81,12 @@ func run(config Config) (err error) {
 
 	httpProxyServer := NewTCPServer("http", config.HttpListen, channels)
 	socksProxyServer := NewTCPServer("socks", config.SocksListen, channels)
+	iptransparentProxyServer := NewTCPServer("iptransparent", config.IPTransparentListen, channels)
+
+	go func() {
+		err := iptransparentProxyServer.Run()
+		log.Panicln(err)
+	}()
 
 	go func() {
 		err := httpProxyServer.Run()

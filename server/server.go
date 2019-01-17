@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GaoMjun/tunsocks/iptransparent"
+
 	"github.com/GaoMjun/ladder"
 	"golang.org/x/crypto/ssh"
 )
@@ -83,9 +85,11 @@ func handleChannels(chans <-chan ssh.NewChannel, comp bool) {
 		proto := string(ch.ExtraData())
 		switch proto {
 		case "http":
-			go handleStream(snappyStream)
+			go handleHTTP(snappyStream)
 		case "socks":
 			go handleSocks(ladder.NewConnWithChannel(snappyStream))
+		case "iptransparent":
+			go handleIPTransparent(snappyStream)
 		default:
 			log.Println(fmt.Sprint("not support protocol ", proto))
 		}
@@ -93,9 +97,17 @@ func handleChannels(chans <-chan ssh.NewChannel, comp bool) {
 }
 
 var socksServer = ladder.NewSocks5Server()
+var iptransparentServer = &iptransparent.Server{}
 
 func handleSocks(conn net.Conn) {
 	err := socksServer.ServeConn(conn)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func handleIPTransparent(conn io.ReadWriteCloser) {
+	err := iptransparentServer.ServeConn(conn)
 	if err != nil {
 		log.Println(err)
 	}
@@ -116,7 +128,7 @@ func handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
-func handleStream(stream io.ReadWriteCloser) {
+func handleHTTP(stream io.ReadWriteCloser) {
 	var (
 		err     error
 		request *ladder.Request
