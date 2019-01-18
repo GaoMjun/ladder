@@ -24,8 +24,7 @@ func main() {
 	}()
 
 	if len(os.Args) < 2 {
-		err = errors.New("invalid parameter")
-		return
+		os.Args = append(os.Args, "server")
 	}
 
 	mode := os.Args[1]

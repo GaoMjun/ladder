@@ -11,6 +11,7 @@ import (
 
 	// _ "net/http/pprof"
 
+	"github.com/GaoMjun/goutils"
 	"github.com/GaoMjun/ladder"
 	"github.com/GaoMjun/ladder/httpstream"
 	"github.com/gorilla/websocket"
@@ -51,22 +52,21 @@ func Run(args []string) {
 	if len(*l) <= 0 {
 		port := os.Getenv("PORT")
 		if len(port) <= 0 {
-			err = errors.New("invalid parameter, no listen address")
-			return
+			port = "80"
 		}
 
 		*l = ":" + port
 	}
 
 	if len(*u) <= 0 {
-		err = errors.New("invalid parameter, no user")
-		return
+		*u = goutils.RandString(8)
 	}
 
 	if len(*p) <= 0 {
-		err = errors.New("invalid parameter, no password")
-		return
+		*p = goutils.RandString(8)
 	}
+
+	log.Println("listen:", *l, "user:", *u, "pass:", *p)
 
 	s.listen = *l
 	s.user = *u
