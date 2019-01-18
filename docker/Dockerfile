@@ -12,4 +12,6 @@ FROM scratch
 
 COPY --from=builder /ladder /bin/ladder
 
+EXPOSE 8888
+
 ENTRYPOINT ["ladder"]
