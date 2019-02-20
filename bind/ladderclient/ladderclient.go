@@ -10,6 +10,6 @@ func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 }
 
-func Run(configJsonString string) {
-	client.RunWithJsonString(configJsonString)
+func Run(filename string) {
+	client.Run([]string{"-c", filename})
 }
