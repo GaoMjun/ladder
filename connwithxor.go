@@ -6,8 +6,10 @@ import (
 )
 
 type ConnWithXor struct {
-	k []byte
-	c net.Conn
+	k    []byte
+	c    net.Conn
+	rbuf []byte
+	wbuf []byte
 }
 
 func NewConnWithXor(c net.Conn, key []byte) (conn *ConnWithXor) {
@@ -23,14 +25,20 @@ func (self *ConnWithXor) Read(p []byte) (n int, err error) {
 		return
 	}
 
-	o := xor(p[:n], self.k)
-	copy(p, o)
+	if n > len(self.rbuf) {
+		self.rbuf = make([]byte, n)
+	}
+	xor(p[:n], self.rbuf, self.k)
+	copy(p, self.rbuf)
 	return
 }
 
 func (self *ConnWithXor) Write(p []byte) (n int, err error) {
-	o := xor(p, self.k)
-	return self.c.Write(o)
+	if len(p) > len(self.wbuf) {
+		self.wbuf = make([]byte, len(p))
+	}
+	xor(p, self.wbuf, self.k)
+	return self.c.Write(self.wbuf[:len(p)])
 }
 
 func (self *ConnWithXor) Close() (err error) {

@@ -73,9 +73,7 @@ func unPadding(i []byte, blockSize int) (o []byte, err error) {
 	return
 }
 
-func xor(i, key []byte) (o []byte) {
-	o = make([]byte, len(i))
-
+func xor(i, o, key []byte) {
 	for i, b := range i {
 		for j := 0; j < len(key); j++ {
 			b ^= key[j]
