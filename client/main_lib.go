@@ -1,5 +1,4 @@
-// +build !lib
-
+// +build lib
 package client
 
 import (
@@ -13,15 +12,16 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/GaoMjun/tunsocks/interfacedialer"
+
 	"github.com/GaoMjun/ladder/httpstream"
 
 	"github.com/GaoMjun/ladder"
 	"github.com/gorilla/websocket"
 )
 
-func RunWithJsonString(jsonString string) {
+func RunWithJsonString(jsonString string) (err error) {
 	var (
-		err    error
 		config Config
 	)
 
@@ -31,6 +31,7 @@ func RunWithJsonString(jsonString string) {
 	}
 
 	err = run(config)
+	return
 }
 
 func Run(args []string) {
@@ -137,7 +138,8 @@ func createWSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.IP)
+			return interfacedialer.Dial("tcp", remote.IP, "en0")
+			// return net.Dial(network, remote.IP)
 		}
 	}
 
@@ -191,7 +193,8 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.IP)
+			return interfacedialer.Dial("tcp", remote.IP, "en0")
+			// return net.Dial(network, remote.IP)
 		}
 	}
 
@@ -201,7 +204,8 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.UpIP) > 0 {
 		dialer.UpNetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.UpIP)
+			return interfacedialer.Dial("tcp", remote.UpIP, "en0")
+			// return net.Dial(network, remote.UpIP)
 		}
 	}
 
