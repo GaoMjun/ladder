@@ -20,6 +20,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var GetProtectedSocket func(int, string, int) int
+
 func RunWithJsonString(jsonString string) (err error) {
 	var (
 		config Config
@@ -138,7 +140,7 @@ func createWSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", remote.IP, "en0")
+			return interfacedialer.Dial("tcp", remote.IP, "en0", GetProtectedSocket)
 			// return net.Dial(network, remote.IP)
 		}
 	}
@@ -193,7 +195,7 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", remote.IP, "en0")
+			return interfacedialer.Dial("tcp", remote.IP, "en0", GetProtectedSocket)
 			// return net.Dial(network, remote.IP)
 		}
 	}
@@ -204,7 +206,7 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.UpIP) > 0 {
 		dialer.UpNetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", remote.UpIP, "en0")
+			return interfacedialer.Dial("tcp", remote.UpIP, "en0", GetProtectedSocket)
 			// return net.Dial(network, remote.UpIP)
 		}
 	}
