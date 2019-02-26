@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GaoMjun/tunsocks/iptransparent"
-
+	"github.com/GaoMjun/iptransparent"
 	"github.com/GaoMjun/ladder"
 	"golang.org/x/crypto/ssh"
 )
