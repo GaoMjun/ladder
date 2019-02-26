@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func handleConn(conn net.Conn, user, pass string, comp bool) {
+func handleConn(conn net.Conn, user, pass string) {
 	var (
 		err     error
 		config  *ssh.ServerConfig
@@ -55,16 +55,15 @@ func handleConn(conn net.Conn, user, pass string, comp bool) {
 		return
 	}
 
-	go handleChannels(chans, comp)
+	go handleChannels(chans)
 	handleRequests(reqs)
 }
 
-func handleChannels(chans <-chan ssh.NewChannel, comp bool) {
+func handleChannels(chans <-chan ssh.NewChannel) {
 	var (
-		err          error
-		stream       ssh.Channel
-		reqs         <-chan *ssh.Request
-		snappyStream io.ReadWriteCloser
+		err    error
+		stream ssh.Channel
+		reqs   <-chan *ssh.Request
 	)
 
 	for ch := range chans {
@@ -74,22 +73,24 @@ func handleChannels(chans <-chan ssh.NewChannel, comp bool) {
 			continue
 		}
 
-		if comp == true {
-			snappyStream = ladder.NewConnWithSnappy(stream)
-		} else {
-			snappyStream = stream
-		}
-
 		go ssh.DiscardRequests(reqs)
 
 		proto := string(ch.ExtraData())
 		switch proto {
 		case "http":
-			go handleHTTP(snappyStream)
+			go handleHTTP(stream)
+		case "http:comp":
+			go handleHTTP(ladder.NewConnWithSnappy(stream))
+
 		case "socks":
-			go handleSocks(ladder.NewConnWithChannel(snappyStream))
+			go handleSocks(ladder.NewConnWithChannel(stream))
+		case "socks:comp":
+			go handleSocks(ladder.NewConnWithChannel(ladder.NewConnWithSnappy(stream)))
+
 		case "iptransparent":
-			go handleIPTransparent(snappyStream)
+			go handleIPTransparent(stream)
+		case "iptransparent:comp":
+			go handleIPTransparent(ladder.NewConnWithSnappy(stream))
 		default:
 			log.Println(fmt.Sprint("not support protocol ", proto))
 		}

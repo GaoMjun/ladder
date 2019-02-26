@@ -73,7 +73,11 @@ func (self *TCPServer) handleConn(conn net.Conn) {
 	channel := be.V.(*Channel)
 	sshConn = channel.conn
 	log.Println(fmt.Sprint("select ", sshConn.RemoteAddr().String()))
-	stream, reqs, err := sshConn.OpenChannel("", []byte(self.proto))
+	extraData := []byte(self.proto)
+	if channel.comp == true {
+		extraData = append(extraData, []byte(":comp")...)
+	}
+	stream, reqs, err := sshConn.OpenChannel("", extraData)
 	if err != nil {
 		return
 	}

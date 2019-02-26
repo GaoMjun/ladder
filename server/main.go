@@ -21,7 +21,6 @@ type server struct {
 	listen     string
 	user       string
 	pass       string
-	compress   bool
 	key        [md5.Size]byte
 	wsUpgrader websocket.Upgrader
 	hsUpgrader *httpstream.Upgrader
@@ -46,7 +45,6 @@ func Run(args []string) {
 	l := flags.String("l", "", "listen at")
 	u := flags.String("u", "", "user")
 	p := flags.String("p", "", "pass")
-	m := flags.Bool("m", false, "compress message")
 	flags.Parse(args)
 
 	if len(*l) <= 0 {
@@ -71,7 +69,6 @@ func Run(args []string) {
 	s.listen = *l
 	s.user = *u
 	s.pass = *p
-	s.compress = *m
 	s.key = md5.Sum([]byte(fmt.Sprintf("%s:%s", s.user, s.pass)))
 	s.hsUpgrader = httpstream.NewUpgrader()
 	s.wsUpgrader = websocket.Upgrader{
@@ -134,7 +131,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleConn(ladder.NewConnWithXor(ladder.NewConn(conn), self.key[:]), self.user, self.pass, self.compress)
+	handleConn(ladder.NewConnWithXor(ladder.NewConn(conn), self.key[:]), self.user, self.pass)
 }
 
 func handleFake(w http.ResponseWriter, r *http.Request) {
@@ -142,5 +139,5 @@ func handleFake(w http.ResponseWriter, r *http.Request) {
 }
 
 func (self *server) handleHSConn(conn *httpstream.Conn) {
-	handleConn(ladder.NewConnWithXor(conn, self.key[:]), self.user, self.pass, self.compress)
+	handleConn(ladder.NewConnWithXor(conn, self.key[:]), self.user, self.pass)
 }
