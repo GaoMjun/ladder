@@ -13,8 +13,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/GaoMjun/tunsocks/interfacedialer"
-
+	"github.com/GaoMjun/goutils/interfacedialer"
 	"github.com/GaoMjun/ladder/httpstream"
 
 	"github.com/GaoMjun/ladder"
