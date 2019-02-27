@@ -100,7 +100,7 @@ func (self *server) handler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err != nil {
 			handleFake(w, r)
-			log.Println(err)
+			log.Println(err, r.RemoteAddr)
 		}
 	}()
 
