@@ -4,6 +4,7 @@ package client
 
 import (
 	"crypto/md5"
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -101,14 +102,16 @@ func run(config Config) (err error) {
 
 func createWSChannel(remote Remote, channels *ladder.Channels) {
 	var (
-		err       error
-		user      = remote.User
-		pass      = remote.Pass
-		comp      = remote.Compress
-		conn      *websocket.Conn
-		token     string
-		header    = map[string][]string{}
-		dialer    = &websocket.Dialer{HandshakeTimeout: time.Second * 5, ReadBufferSize: 1024, WriteBufferSize: 1024}
+		err    error
+		user   = remote.User
+		pass   = remote.Pass
+		comp   = remote.Compress
+		conn   *websocket.Conn
+		token  string
+		header = map[string][]string{}
+		dialer = &websocket.Dialer{HandshakeTimeout: time.Second * 5,
+			ReadBufferSize: 1024, WriteBufferSize: 1024,
+			TLSClientConfig: &tls.Config{RootCAs: nil, InsecureSkipVerify: true}}
 		urlString = remote.Host
 		u         *url.URL
 		key       = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
