@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"os"
 
-	// _ "net/http/pprof"
-
 	"github.com/GaoMjun/goutils"
 	"github.com/GaoMjun/ladder"
 	"github.com/GaoMjun/ladder/httpstream"
@@ -27,10 +25,6 @@ type server struct {
 }
 
 func Run(args []string) {
-	// go func() {
-	// 	log.Println(http.ListenAndServe("localhost:6061", nil))
-	// }()
-
 	var (
 		err   error
 		flags = flag.NewFlagSet("server", flag.ContinueOnError)

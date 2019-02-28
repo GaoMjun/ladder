@@ -4,14 +4,44 @@ import (
 	"io"
 )
 
-func Pipe(src io.ReadWriteCloser, dst io.ReadWriteCloser) {
+func Pipe(src, dst io.ReadWriteCloser) {
 	go func() {
-		buffer := make([]byte, 1024*4)
-		io.CopyBuffer(src, dst, buffer)
+		var (
+			err error
+			buf = make([]byte, 1024*1)
+			n   = 0
+		)
+
+		for {
+			n, err = src.Read(buf)
+			if err != nil {
+				break
+			}
+
+			_, err = dst.Write(buf[:n])
+			if err != nil {
+				break
+			}
+		}
 	}()
 
-	buffer := make([]byte, 1024*4)
-	io.CopyBuffer(dst, src, buffer)
+	var (
+		err error
+		buf = make([]byte, 1024*1)
+		n   = 0
+	)
+
+	for {
+		n, err = dst.Read(buf)
+		if err != nil {
+			break
+		}
+
+		_, err = src.Write(buf[:n])
+		if err != nil {
+			break
+		}
+	}
 
 	src.Close()
 	dst.Close()
