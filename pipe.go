@@ -2,47 +2,63 @@ package ladder
 
 import (
 	"io"
+	"sync"
 )
 
 func Pipe(src, dst io.ReadWriteCloser) {
+	var (
+		close = func() {
+			src.Close()
+			dst.Close()
+		}
+		wg = sync.WaitGroup{}
+		o  = sync.Once{}
+	)
+
+	wg.Add(2)
 	go func() {
 		var (
 			err error
 			buf = make([]byte, 1024*1)
 			n   = 0
 		)
+		defer func() {
+			o.Do(close)
+			wg.Done()
+		}()
 
 		for {
-			n, err = src.Read(buf)
-			if err != nil {
-				break
+			if n, err = src.Read(buf); err != nil {
+				return
 			}
 
-			_, err = dst.Write(buf[:n])
-			if err != nil {
-				break
+			if _, err = dst.Write(buf[:n]); err != nil {
+				return
 			}
 		}
 	}()
 
-	var (
-		err error
-		buf = make([]byte, 1024*1)
-		n   = 0
-	)
+	go func() {
+		var (
+			err error
+			buf = make([]byte, 1024*1)
+			n   = 0
+		)
+		defer func() {
+			o.Do(close)
+			wg.Done()
+		}()
 
-	for {
-		n, err = dst.Read(buf)
-		if err != nil {
-			break
+		for {
+			if n, err = dst.Read(buf); err != nil {
+				return
+			}
+
+			if _, err = src.Write(buf[:n]); err != nil {
+				return
+			}
 		}
+	}()
 
-		_, err = src.Write(buf[:n])
-		if err != nil {
-			break
-		}
-	}
-
-	src.Close()
-	dst.Close()
+	wg.Wait()
 }
