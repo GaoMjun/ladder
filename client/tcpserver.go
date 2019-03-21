@@ -29,10 +29,10 @@ func (self *TCPServer) Run() (err error) {
 		l net.Listener
 	)
 
-	l, err = net.Listen("tcp", self.addr)
-	if err != nil {
+	if l, err = net.Listen("tcp", self.addr); err != nil {
 		return
 	}
+	log.Println("local", self.proto, "server listen at", self.addr)
 
 	for {
 		conn, err := l.Accept()
@@ -42,8 +42,6 @@ func (self *TCPServer) Run() (err error) {
 
 		go self.handleConn(conn)
 	}
-
-	return
 }
 
 func (self *TCPServer) handleConn(conn net.Conn) {

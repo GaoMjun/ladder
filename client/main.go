@@ -82,22 +82,29 @@ func run(config Config) (err error) {
 		}
 	}
 
-	httpProxyServer := NewTCPServer("http", config.HttpListen, channels)
-	socksProxyServer := NewTCPServer("socks", config.SocksListen, channels)
-	iptransparentProxyServer := NewTCPServer("iptransparent", config.IPTransparentListen, channels)
+	if len(config.HttpListen) > 0 {
+		httpProxyServer := NewTCPServer("http", config.HttpListen, channels)
+		go func() {
+			log.Println(httpProxyServer.Run())
+		}()
 
-	go func() {
-		err := iptransparentProxyServer.Run()
-		log.Panicln(err)
-	}()
+	}
 
-	go func() {
-		err := httpProxyServer.Run()
-		log.Panicln(err)
-	}()
+	if len(config.SocksListen) > 0 {
+		socksProxyServer := NewTCPServer("socks", config.SocksListen, channels)
+		go func() {
+			log.Println(socksProxyServer.Run())
+		}()
+	}
 
-	err = socksProxyServer.Run()
-	return
+	if len(config.IPTransparentListen) > 0 {
+		iptransparentProxyServer := NewTCPServer("iptransparent", config.IPTransparentListen, channels)
+		go func() {
+			log.Println(iptransparentProxyServer.Run())
+		}()
+	}
+
+	select {}
 }
 
 func createWSChannel(remote Remote, channels *ladder.Channels) {
