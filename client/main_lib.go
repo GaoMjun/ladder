@@ -140,7 +140,7 @@ func createWSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", remote.IP, "en0", GetProtectedSocket)
+			return interfacedialer.Dial("tcp", remote.IP, "pdp_ip0", GetProtectedSocket)
 			// return net.Dial(network, remote.IP)
 		}
 	}
@@ -195,7 +195,7 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", remote.IP, "en0", GetProtectedSocket)
+			return interfacedialer.Dial("tcp", remote.IP, "pdp_ip0", GetProtectedSocket)
 			// return net.Dial(network, remote.IP)
 		}
 	}
@@ -206,7 +206,7 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.UpIP) > 0 {
 		dialer.UpNetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", remote.UpIP, "en0", GetProtectedSocket)
+			return interfacedialer.Dial("tcp", remote.UpIP, "pdp_ip0", GetProtectedSocket)
 			// return net.Dial(network, remote.UpIP)
 		}
 	}

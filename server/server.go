@@ -121,7 +121,6 @@ func handleRequests(reqs <-chan *ssh.Request) {
 			if err != nil {
 				log.Println(err)
 			}
-			log.Println("ping keepalive")
 		default:
 			log.Println(r)
 		}

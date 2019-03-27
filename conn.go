@@ -1,7 +1,6 @@
 package ladder
 
 import (
-	"errors"
 	"io"
 	"net"
 	"time"
@@ -18,40 +17,33 @@ type Conn struct {
 func NewConn(wsConn *websocket.Conn) (conn *Conn) {
 	conn = &Conn{}
 	conn.wsConn = wsConn
-	conn.rbuf = make([]byte, 1024*64)
+	conn.rbuf = make([]byte, ^uint16(0))
 	return
 }
 
 func (self *Conn) Read(buf []byte) (n int, err error) {
-	var (
-		size int
-	)
-
+TRY:
 	if len(self.buffer) > 0 {
-		if len(self.buffer) <= len(buf) {
+		if len(self.buffer) >= len(buf) {
 			n = copy(buf, self.buffer)
-			self.buffer = []byte{}
+			self.buffer = self.buffer[n:]
 			return
 		}
 
 		n = copy(buf, self.buffer)
-		self.buffer = self.buffer[n:]
+		self.buffer = nil
 		return
 	}
 
-	size, err = readMessage(self.wsConn, self.rbuf)
-	if err != nil {
+	var (
+		size = 0
+	)
+	if size, err = readMessage(self.wsConn, self.rbuf); err != nil {
 		return
 	}
 
-	if size <= len(buf) {
-		n = copy(buf, self.rbuf[:size])
-		return
-	}
-
-	n = copy(buf, self.rbuf)
-	self.buffer = self.rbuf[n:size]
-	return
+	self.buffer = append(self.buffer, self.rbuf[:size]...)
+	goto TRY
 }
 
 func (self *Conn) Write(buf []byte) (n int, err error) {
@@ -96,24 +88,21 @@ func (self *Conn) SetDeadline(t time.Time) (err error) {
 }
 
 func readMessage(wsConn *websocket.Conn, buf []byte) (n int, err error) {
+TRY:
 	var (
 		r           io.Reader
 		messageType int
 	)
-	messageType, r, err = wsConn.NextReader()
-	if err != nil {
+	if messageType, r, err = wsConn.NextReader(); err != nil {
 		return
 	}
 	if messageType != websocket.BinaryMessage {
-		err = errors.New("websocket non-binary msg")
-		return
+		goto TRY
 	}
 
-	n, err = io.ReadFull(r, buf)
-	if err != nil {
+	if n, err = io.ReadFull(r, buf); err != nil {
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			err = nil
-		} else {
 			return
 		}
 	}
