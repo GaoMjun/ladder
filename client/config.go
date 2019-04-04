@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -29,6 +30,7 @@ type Remote struct {
 	Mode     string
 	UpHost   string
 	UpIP     string
+	Ipv6     bool
 }
 
 func NewConfigWithJsonString(jsonString string) (config Config, err error) {
@@ -166,6 +168,13 @@ func prepareRemote(remote Remote) (remotes []Remote) {
 	}
 
 	for _, addr := range addrs {
+		if strings.Contains(addr, ":") {
+			if !remote.Ipv6 {
+				continue
+			}
+
+			addr = fmt.Sprintf("[%s]", addr)
+		}
 
 		addr = fmt.Sprintf("%s:%s", addr, port)
 
