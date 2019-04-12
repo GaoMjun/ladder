@@ -4,3 +4,5 @@ client/config_test.jsonc
 main/ladder
 heroku
 main/Dockerfile
+client/config2.jsonc
+main/ladder.exe
