@@ -135,6 +135,7 @@ func handleHTTP(stream io.ReadWriteCloser) {
 		conn    net.Conn
 		remote  *ladder.ConnWithTimeout
 		dialer  = &net.Dialer{Timeout: time.Second * 3}
+		raw     []byte
 	)
 	defer func() {
 		stream.Close()
@@ -155,16 +156,28 @@ func handleHTTP(stream io.ReadWriteCloser) {
 	if strings.Index(address, ":") == -1 {
 		address = address + ":80"
 	}
+
+	if request.HttpRequest.Method == "CONNECT" {
+		// get real address
+		var (
+			host string
+			port int
+		)
+		if host, port, raw, _, err = ladder.ParseHttpHost(stream); err == nil {
+			address = fmt.Sprintf("%s:%d", host, port)
+		}
+	}
 	log.Println(address)
 
-	conn, err = dialer.Dial("tcp", address)
-	if err != nil {
+	if conn, err = dialer.Dial("tcp", address); err != nil {
 		return
 	}
 	remote = ladder.NewConnWithTimeout(conn)
 
 	if request.HttpRequest.Method != "CONNECT" {
 		remote.Write(request.Bytes())
+	} else {
+		remote.Write(raw)
 	}
 
 	ladder.Pipe(stream, remote)

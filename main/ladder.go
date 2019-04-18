@@ -5,8 +5,7 @@ import (
 	"log"
 	"os"
 
-	"net/http"
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 
 	"github.com/GaoMjun/ladder/client"
 	"github.com/GaoMjun/ladder/server"
@@ -17,9 +16,9 @@ func init() {
 }
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe(":6061", nil))
-	}()
+	// go func() {
+	// 	log.Println(http.ListenAndServe(":6061", nil))
+	// }()
 
 	var (
 		err error
