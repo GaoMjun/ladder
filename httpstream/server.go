@@ -1,63 +1,60 @@
 package httpstream
 
 import (
-	"io"
+	"io/ioutil"
 	"net/http"
 	"sync"
 )
 
 type Upgrader struct {
-	readStreams  map[string]io.ReadCloser
-	writeStreams map[string]io.WriteCloser
-	locker       *sync.RWMutex
-	connCh       chan *Conn
+	conns  map[string]*Conn
+	locker *sync.RWMutex
+	connCh chan *Conn
 }
 
 func NewUpgrader() (u *Upgrader) {
 	u = &Upgrader{}
-	u.readStreams = map[string]io.ReadCloser{}
-	u.writeStreams = map[string]io.WriteCloser{}
+	u.conns = map[string]*Conn{}
 	u.locker = &sync.RWMutex{}
 	u.connCh = make(chan *Conn)
 	return
 }
 
 func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" && r.Method != "GET" {
-		return
-	}
-
 	key := r.Header.Get("Httpstream-Key")
-	if len(key) <= 0 {
-		return
-	}
 
 	if r.Method == "POST" {
-		ws := self.getWriteStream(key)
-		if ws == nil {
-			self.addReadStream(key, r.Body)
-		} else {
-			self.connCh <- &Conn{r: r.Body, w: ws}
+		conn := self.getConn(key)
+		if conn == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
+
+		w.WriteHeader(http.StatusNoContent)
+
+		data, _ := ioutil.ReadAll(r.Body)
+		conn.dataCh <- data
+		return
 	}
 
 	if r.Method == "GET" {
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Transfer-Encoding", "chunked")
-		w.Header().Set("X-Accel-Buffering", "no")
 		w.WriteHeader(http.StatusOK)
 		w.(http.Flusher).Flush()
 
-		rs := self.getReadStream(key)
-		if rs == nil {
-			self.addWriteStream(key, NopHttpResponseWriteCloser(w))
-		} else {
-			self.connCh <- &Conn{r: rs, w: NopHttpResponseWriteCloser(w)}
-		}
+		conn := &Conn{}
+		conn.isClient = false
+		conn.chunkedWriter = NopHttpResponseWriteCloser(w)
+		conn.dataCh = make(chan []byte)
+
+		self.addConn(key, conn)
+		self.connCh <- conn
 	}
 
 	<-w.(http.CloseNotifier).CloseNotify()
+	self.delConn(key)
 }
 
 func (self *Upgrader) Accept() (conn *Conn) {
@@ -65,54 +62,38 @@ func (self *Upgrader) Accept() (conn *Conn) {
 	return
 }
 
-func (self *Upgrader) getReadStream(key string) (r io.ReadCloser) {
+func (self *Upgrader) delConn(key string) {
 	self.locker.Lock()
 	defer self.locker.Unlock()
 
-	if s, ok := self.readStreams[key]; ok {
-		r = s
-		delete(self.readStreams, key)
+	if c, ok := self.conns[key]; ok {
+		close(c.dataCh)
+		delete(self.conns, key)
+		return
+	}
+	return
+}
+
+func (self *Upgrader) getConn(key string) (conn *Conn) {
+	self.locker.Lock()
+	defer self.locker.Unlock()
+
+	if c, ok := self.conns[key]; ok {
+		conn = c
 		return
 	}
 
 	return
 }
 
-func (self *Upgrader) addReadStream(key string, r io.ReadCloser) {
+func (self *Upgrader) addConn(key string, conn *Conn) {
 	self.locker.Lock()
 	defer self.locker.Unlock()
 
-	self.readStreams[key] = r
-	return
-}
-
-func (self *Upgrader) delReadStream(key string) {
-	_ = self.getReadStream(key)
-	return
-}
-
-func (self *Upgrader) getWriteStream(key string) (w io.WriteCloser) {
-	self.locker.Lock()
-	defer self.locker.Unlock()
-
-	if s, ok := self.writeStreams[key]; ok {
-		w = s
-		delete(self.writeStreams, key)
-		return
+	if c, ok := self.conns[key]; ok {
+		c.Close()
 	}
 
-	return
-}
-
-func (self *Upgrader) addWriteStream(key string, w io.WriteCloser) {
-	self.locker.Lock()
-	defer self.locker.Unlock()
-
-	self.writeStreams[key] = w
-	return
-}
-
-func (self *Upgrader) delWriteStream(key string) {
-	_ = self.getWriteStream(key)
+	self.conns[key] = conn
 	return
 }

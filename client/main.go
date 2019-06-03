@@ -242,7 +242,6 @@ TRY:
 	reconnect = reconnectDuration(reconnect)
 	time.Sleep(time.Second * time.Duration(reconnect))
 	goto TRY
-
 }
 
 func reconnectDuration(d1 int) (d2 int) {
