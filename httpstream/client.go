@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/GaoMjun/goutils"
 )
@@ -13,6 +14,10 @@ import (
 func Dial(serverAddr, serverHost string, header http.Header) (conn *Conn, err error) {
 	if len(serverHost) <= 0 {
 		serverHost = serverAddr
+	}
+
+	if !strings.Contains(serverHost, ":") {
+		serverHost += ":80"
 	}
 
 	if header == nil {
