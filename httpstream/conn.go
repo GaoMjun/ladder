@@ -21,7 +21,10 @@ type Conn struct {
 
 	header http.Header
 
-	dataCh chan []byte
+	dataCh  chan []byte
+	closeCh chan struct{}
+
+	RemoteHost string
 }
 
 func (self *Conn) Read(p []byte) (n int, err error) {
@@ -30,20 +33,21 @@ func (self *Conn) Read(p []byte) (n int, err error) {
 		return
 	}
 
-	data, ok := <-self.dataCh
-	if !ok {
+	select {
+	case data := <-self.dataCh:
+		if len(data) > 0 {
+			if len(data) > len(p) {
+				err = errors.New("read buffer not enough")
+				return
+			}
+
+			n = copy(p, data)
+		}
+	case <-self.closeCh:
 		err = io.EOF
 		return
 	}
 
-	if len(data) > 0 {
-		if len(data) > len(p) {
-			err = errors.New("read buffer not enough")
-			return
-		}
-
-		n = copy(p, data)
-	}
 	return
 }
 
@@ -92,6 +96,14 @@ func (self *Conn) Close() (err error) {
 
 	if self.downConn != nil {
 		self.downConn.Close()
+	}
+
+	if self.chunkedReader != nil {
+		self.chunkedReader.Close()
+	}
+
+	if self.chunkedWriter != nil {
+		self.chunkedWriter.Close()
 	}
 
 	return

@@ -18,8 +18,22 @@ func (self nopHttpResponseWriteCloser) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (self nopHttpResponseWriteCloser) Close() error {
-	return nil
+func (self nopHttpResponseWriteCloser) Close() (err error) {
+	// if self.w == nil {
+	// 	return
+	// }
+
+	// v, ok := self.w.(http.Hijacker)
+	// if !ok {
+	// 	return
+	// }
+
+	// var conn net.Conn
+	// if conn, _, err = v.Hijack(); err != nil {
+	// 	return
+	// }
+	// err = conn.Close()
+	return
 }
 
 func NopHttpResponseWriteCloser(w http.ResponseWriter) (wc io.WriteCloser) {

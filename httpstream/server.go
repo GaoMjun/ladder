@@ -1,6 +1,7 @@
 package httpstream
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -22,6 +23,7 @@ func NewUpgrader() (u *Upgrader) {
 
 func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 	key := r.Header.Get("Httpstream-Key")
+	remoteHost, _ := base64.StdEncoding.DecodeString(r.Header.Get("HTTPStream-Host"))
 
 	if r.Method == "POST" {
 		conn := self.getConn(key)
@@ -48,6 +50,8 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 		conn.isClient = false
 		conn.chunkedWriter = NopHttpResponseWriteCloser(w)
 		conn.dataCh = make(chan []byte)
+		conn.closeCh = make(chan struct{})
+		conn.RemoteHost = string(remoteHost)
 
 		self.addConn(key, conn)
 		self.connCh <- conn
@@ -55,6 +59,9 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 	<-w.(http.CloseNotifier).CloseNotify()
 	self.delConn(key)
+
+	underlyingConn, _, _ := w.(http.Hijacker).Hijack()
+	underlyingConn.Close()
 }
 
 func (self *Upgrader) Accept() (conn *Conn) {
@@ -67,7 +74,7 @@ func (self *Upgrader) delConn(key string) {
 	defer self.locker.Unlock()
 
 	if c, ok := self.conns[key]; ok {
-		close(c.dataCh)
+		close(c.closeCh)
 		delete(self.conns, key)
 		return
 	}
