@@ -183,7 +183,6 @@ TRY:
 func createHSChannel(remote Remote, channels *ladder.Channels) {
 	var (
 		err       error
-		dialer    = &httpstream.Dialer{}
 		header    = http.Header{}
 		token     string
 		user      = remote.User
@@ -192,6 +191,7 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 		key       = md5.Sum([]byte(fmt.Sprintf("%s:%s", user, pass)))
 		conn      *httpstream.Conn
 		reconnect = 0
+		u         *url.URL
 	)
 	defer func() {
 		if err != nil {
@@ -199,21 +199,24 @@ func createHSChannel(remote Remote, channels *ladder.Channels) {
 		}
 	}()
 
-	if len(remote.IP) > 0 {
-		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.IP)
-		}
+	if u, err = url.Parse(remote.Host); err != nil {
+		return
 	}
+	// if len(remote.IP) > 0 {
+	// 	dialer.NetDial = func(network, addr string) (net.Conn, error) {
+	// 		return net.Dial(network, remote.IP)
+	// 	}
+	// }
 
-	if len(remote.UpHost) > 0 {
-		dialer.UpHost = remote.UpHost
-	}
+	// if len(remote.UpHost) > 0 {
+	// 	dialer.UpHost = remote.UpHost
+	// }
 
-	if len(remote.UpIP) > 0 {
-		dialer.UpNetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.UpIP)
-		}
-	}
+	// if len(remote.UpIP) > 0 {
+	// 	dialer.UpNetDial = func(network, addr string) (net.Conn, error) {
+	// 		return net.Dial(network, remote.UpIP)
+	// 	}
+	// }
 
 	header["User-Agent"] = []string{"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.3"}
 
@@ -225,7 +228,7 @@ TRY:
 		conn.Close()
 		conn = nil
 	}
-	conn, err = dialer.Dial(remote.Host, header)
+	conn, err = httpstream.Dial(u.Host, remote.IP, header)
 	if err != nil {
 		log.Println(err)
 

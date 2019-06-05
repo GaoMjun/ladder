@@ -25,6 +25,8 @@ type Conn struct {
 	closeCh chan struct{}
 
 	RemoteHost string
+
+	buf []byte
 }
 
 func (self *Conn) Read(p []byte) (n int, err error) {
@@ -33,15 +35,20 @@ func (self *Conn) Read(p []byte) (n int, err error) {
 		return
 	}
 
+	if len(self.buf) > 0 {
+		n = copy(p, self.buf)
+
+		self.buf = self.buf[n:]
+		return
+	}
+
 	select {
 	case data := <-self.dataCh:
 		if len(data) > 0 {
-			if len(data) > len(p) {
-				err = errors.New("read buffer not enough")
-				return
-			}
-
 			n = copy(p, data)
+
+			self.buf = data[n:]
+			return
 		}
 	case <-self.closeCh:
 		err = io.EOF
@@ -114,7 +121,7 @@ func (self *Conn) LocalAddr() net.Addr {
 }
 
 func (self *Conn) RemoteAddr() net.Addr {
-	return nil
+	return self.downConn.RemoteAddr()
 }
 
 func (self *Conn) SetReadDeadline(t time.Time) error {
