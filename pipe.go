@@ -19,7 +19,7 @@ func Pipe(src, dst io.ReadWriteCloser) {
 	go func() {
 		var (
 			err error
-			buf = make([]byte, 1024*1)
+			buf = make([]byte, 1024*4)
 			n   = 0
 		)
 		defer func() {
@@ -41,7 +41,7 @@ func Pipe(src, dst io.ReadWriteCloser) {
 	go func() {
 		var (
 			err error
-			buf = make([]byte, 1024*1)
+			buf = make([]byte, 1024*4)
 			n   = 0
 		)
 		defer func() {

@@ -55,13 +55,13 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 		self.addConn(key, conn)
 		self.connCh <- conn
+
+		<-w.(http.CloseNotifier).CloseNotify()
+		self.delConn(key)
+
+		underlyingConn, _, _ := w.(http.Hijacker).Hijack()
+		underlyingConn.Close()
 	}
-
-	<-w.(http.CloseNotifier).CloseNotify()
-	self.delConn(key)
-
-	underlyingConn, _, _ := w.(http.Hijacker).Hijack()
-	underlyingConn.Close()
 }
 
 func (self *Upgrader) Accept() (conn *Conn) {

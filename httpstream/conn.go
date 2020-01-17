@@ -1,7 +1,7 @@
 package httpstream
 
 import (
-	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -13,8 +13,7 @@ import (
 )
 
 type Conn struct {
-	isClient         bool
-	upConn, downConn net.Conn
+	isClient bool
 
 	chunkedReader io.ReadCloser
 	chunkedWriter io.WriteCloser
@@ -27,6 +26,9 @@ type Conn struct {
 	RemoteHost string
 
 	buf []byte
+
+	httpClient *http.Client
+	serverAddr string
 }
 
 func (self *Conn) Read(p []byte) (n int, err error) {
@@ -60,35 +62,29 @@ func (self *Conn) Read(p []byte) (n int, err error) {
 
 func (self *Conn) Write(p []byte) (n int, err error) {
 	if self.isClient {
-		n = len(p)
+		var (
+			req  *http.Request
+			resp *http.Response
+		)
 
-		header := fmt.Sprintf("POST /%s HTTP/1.1\r\n", goutils.RandString(16))
-		header += fmt.Sprintf("Connection: keep-alive\r\n")
-		header += fmt.Sprintf("Cache-Control: no-cache\r\n")
-		header += fmt.Sprintf("Content-Type: application/octet-stream\r\n")
-		header += fmt.Sprintf("Content-Length: %d\r\n", n)
+		if req, err = http.NewRequest("POST", fmt.Sprintf("http://%s/%s", self.serverAddr, goutils.RandString(16)), bytes.NewReader(p)); err != nil {
+			return
+		}
 		for k, v := range self.header {
-			header += fmt.Sprintf("%s: %s\r\n", k, v[0])
-		}
-		header += "\r\n"
-
-		if _, err = self.upConn.Write([]byte(header)); err != nil {
-			return
+			req.Header.Set(k, v[0])
 		}
 
-		if _, err = self.upConn.Write(p); err != nil {
+		if resp, err = self.httpClient.Do(req); err != nil {
 			return
 		}
-
-		var resp *http.Response
-		if resp, err = http.ReadResponse(bufio.NewReader(self.upConn), nil); err != nil {
-			return
-		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusNoContent {
 			err = errors.New("response not ok")
 			return
 		}
+
+		n = len(p)
 		return
 	}
 
@@ -97,14 +93,6 @@ func (self *Conn) Write(p []byte) (n int, err error) {
 }
 
 func (self *Conn) Close() (err error) {
-	if self.upConn != nil {
-		self.upConn.Close()
-	}
-
-	if self.downConn != nil {
-		self.downConn.Close()
-	}
-
 	if self.chunkedReader != nil {
 		self.chunkedReader.Close()
 	}
@@ -121,7 +109,7 @@ func (self *Conn) LocalAddr() net.Addr {
 }
 
 func (self *Conn) RemoteAddr() net.Addr {
-	return self.downConn.RemoteAddr()
+	return nil
 }
 
 func (self *Conn) SetReadDeadline(t time.Time) error {
