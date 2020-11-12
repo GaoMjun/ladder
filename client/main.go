@@ -228,7 +228,7 @@ TRY:
 		conn.Close()
 		conn = nil
 	}
-	conn, err = httpstream.Dial(u.Host, remote.IP, header)
+	conn, err = httpstream.Dial(u.Host, remote.IP, header, true)
 	if err != nil {
 		log.Println(err)
 
