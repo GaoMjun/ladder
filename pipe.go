@@ -62,3 +62,35 @@ func Pipe(src, dst io.ReadWriteCloser) {
 
 	wg.Wait()
 }
+
+func PipeIoCopy(src, dst io.ReadWriteCloser) {
+	var (
+		close = func() {
+			src.Close()
+			dst.Close()
+		}
+		wg = sync.WaitGroup{}
+		o  = sync.Once{}
+	)
+
+	wg.Add(2)
+	go func() {
+		defer func() {
+			o.Do(close)
+			wg.Done()
+		}()
+
+		io.CopyBuffer(dst, src, make([]byte, 1024*4))
+	}()
+
+	go func() {
+		defer func() {
+			o.Do(close)
+			wg.Done()
+		}()
+
+		io.CopyBuffer(src, dst, make([]byte, 1024*4))
+	}()
+
+	wg.Wait()
+}

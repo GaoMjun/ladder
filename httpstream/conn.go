@@ -1,7 +1,7 @@
 package httpstream
 
 import (
-	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +10,10 @@ import (
 	"time"
 
 	"github.com/GaoMjun/goutils"
+)
+
+const (
+	MAX_UP_UNIT = 1024
 )
 
 type Conn struct {
@@ -29,6 +33,8 @@ type Conn struct {
 
 	httpClient *http.Client
 	serverAddr string
+
+	writeNotWait bool
 }
 
 func (self *Conn) Read(p []byte) (n int, err error) {
@@ -67,17 +73,27 @@ func (self *Conn) Write(p []byte) (n int, err error) {
 			resp *http.Response
 		)
 
-		if req, err = http.NewRequest("POST", fmt.Sprintf("http://%s/%s", self.serverAddr, goutils.RandString(16)), bytes.NewReader(p)); err != nil {
+		if req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/%s", self.serverAddr, goutils.RandString(16)), nil); err != nil {
 			return
 		}
 		for k, v := range self.header {
 			req.Header.Set(k, v[0])
 		}
+		if len(p) > MAX_UP_UNIT {
+			p = p[:MAX_UP_UNIT]
+		}
+
+		req.Header.Set("HTTPStream-Data", base64.StdEncoding.EncodeToString(p))
 
 		if resp, err = self.httpClient.Do(req); err != nil {
 			return
 		}
-		defer resp.Body.Close()
+		// defer resp.Body.Close()
+
+		if self.writeNotWait {
+			n = len(p)
+			return
+		}
 
 		if resp.StatusCode != http.StatusNoContent {
 			err = errors.New("response not ok")

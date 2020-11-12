@@ -2,7 +2,8 @@ package httpstream
 
 import (
 	"encoding/base64"
-	"io/ioutil"
+	"fmt"
+	"log"
 	"net/http"
 	"sync"
 )
@@ -22,24 +23,33 @@ func NewUpgrader() (u *Upgrader) {
 }
 
 func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
-	key := r.Header.Get("Httpstream-Key")
-	remoteHost, _ := base64.StdEncoding.DecodeString(r.Header.Get("HTTPStream-Host"))
-
-	if r.Method == "POST" {
-		conn := self.getConn(key)
-		if conn == nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
+	var (
+		err        error
+		key        = r.Header.Get("Httpstream-Key")
+		remoteHost []byte
+	)
+	defer func() {
+		if err != nil {
+			log.Println(err)
 		}
+	}()
 
-		w.WriteHeader(http.StatusNoContent)
-
-		data, _ := ioutil.ReadAll(r.Body)
-		conn.dataCh <- data
+	if len(key) <= 0 {
+		err = fmt.Errorf("Httpstream-Key is null")
 		return
 	}
 
-	if r.Method == "GET" {
+	if r.Method == http.MethodGet {
+		if remoteHost, err = base64.StdEncoding.DecodeString(r.Header.Get("HTTPStream-Host")); err != nil {
+			err = fmt.Errorf("get HTTPStream-Host failed, %v", err)
+			return
+		}
+
+		if len(remoteHost) <= 0 {
+			err = fmt.Errorf("Httpstream-Host is null")
+			return
+		}
+
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Transfer-Encoding", "chunked")
@@ -61,6 +71,32 @@ func (self *Upgrader) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 		underlyingConn, _, _ := w.(http.Hijacker).Hijack()
 		underlyingConn.Close()
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		var (
+			conn *Conn
+			data []byte
+		)
+
+		conn = self.getConn(key)
+		if conn == nil {
+			err = fmt.Errorf("conn is null, %v", key)
+			return
+		}
+
+		if data, err = base64.StdEncoding.DecodeString(r.Header.Get("HTTPStream-Data")); err != nil {
+			err = fmt.Errorf("get HTTPStream-Data failed, %v", err)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+
+		if len(data) > 0 {
+			conn.dataCh <- data
+		}
+		return
 	}
 }
 
@@ -82,8 +118,8 @@ func (self *Upgrader) delConn(key string) {
 }
 
 func (self *Upgrader) getConn(key string) (conn *Conn) {
-	self.locker.Lock()
-	defer self.locker.Unlock()
+	self.locker.RLock()
+	defer self.locker.RUnlock()
 
 	if c, ok := self.conns[key]; ok {
 		conn = c

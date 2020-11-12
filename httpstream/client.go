@@ -10,7 +10,7 @@ import (
 	"github.com/GaoMjun/goutils"
 )
 
-func Dial(serverAddr, serverHost string, header http.Header) (conn *Conn, err error) {
+func Dial(serverAddr, serverHost string, header http.Header, writeNotWait bool) (conn *Conn, err error) {
 	if len(serverHost) <= 0 {
 		serverHost = serverAddr
 	}
@@ -69,6 +69,7 @@ func Dial(serverAddr, serverHost string, header http.Header) (conn *Conn, err er
 	conn.header = header
 	conn.httpClient = httpClient
 	conn.serverAddr = serverAddr
+	conn.writeNotWait = writeNotWait
 
 	return
 }
