@@ -14,9 +14,9 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/GaoMjun/ladder/httpstream"
+	"ladder"
+	"ladder/httpstream"
 
-	"github.com/GaoMjun/ladder"
 	"github.com/gorilla/websocket"
 )
 

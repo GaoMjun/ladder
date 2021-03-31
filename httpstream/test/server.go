@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/GaoMjun/ladder"
-	"github.com/GaoMjun/ladder/httpstream"
+	"ladder"
+	"ladder/httpstream"
 )
 
 func init() {

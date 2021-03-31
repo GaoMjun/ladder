@@ -7,7 +7,8 @@ import (
 
 	"github.com/GaoMjun/goutils"
 
-	"github.com/GaoMjun/ladder"
+	"ladder"
+
 	"golang.org/x/crypto/ssh"
 )
 

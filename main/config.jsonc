@@ -1,0 +1,20 @@
+{
+    "HttpListen": ":1999",
+    "SocksListen": "",
+    "IPTransparentListen": "",
+
+    "Remotes": [
+        {
+            "Host": "http://ladder01.herokuapp.com/",
+            "IP": "3.226.154.190:80",
+            "Channels": 1,
+            "User": "fuck",
+            "Pass": "gfw",
+            "Compress": true,
+            "Mode": "ws",
+            "UpHost": "",
+            "UpIP": "",
+            "Ipv6": false
+        }
+    ]
+}

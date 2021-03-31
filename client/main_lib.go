@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/GaoMjun/goutils/interfacedialer"
-	"github.com/GaoMjun/ladder/httpstream"
-
-	"github.com/GaoMjun/ladder"
 	"github.com/gorilla/websocket"
+
+	"ladder"
+	"ladder/httpstream"
 )
 
 var GetProtectedSocket func(int, string, int) int
