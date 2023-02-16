@@ -8,7 +8,7 @@ import (
 
 	_ "net/http/pprof"
 
-	"ladder"
+	"github.com/GaoMjun/ladder"
 )
 
 func init() {

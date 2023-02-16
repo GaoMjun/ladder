@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"os"
 
-	"ladder"
-	"ladder/httpstream"
+	"github.com/GaoMjun/ladder"
+	"github.com/GaoMjun/ladder/httpstream"
 
 	"github.com/GaoMjun/goutils"
 	"github.com/gorilla/websocket"

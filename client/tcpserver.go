@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 
-	"ladder"
+	"github.com/GaoMjun/ladder"
 
 	"golang.org/x/crypto/ssh"
 )

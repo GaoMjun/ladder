@@ -1,3 +1,4 @@
+//go:build lib
 // +build lib
 
 package client
@@ -16,8 +17,8 @@ import (
 	"github.com/GaoMjun/goutils/interfacedialer"
 	"github.com/gorilla/websocket"
 
-	"ladder"
-	"ladder/httpstream"
+	"github.com/GaoMjun/ladder"
+	"github.com/GaoMjun/ladder/httpstream"
 )
 
 var GetProtectedSocket func(int, string, int) int

@@ -1,3 +1,4 @@
+//go:build !lib
 // +build !lib
 
 package client
@@ -14,9 +15,10 @@ import (
 	"net/url"
 	"time"
 
-	"ladder"
-	"ladder/httpstream"
+	"github.com/GaoMjun/ladder"
+	"github.com/GaoMjun/ladder/httpstream"
 
+	"github.com/GaoMjun/goutils/interfacedialer"
 	"github.com/gorilla/websocket"
 )
 
@@ -147,7 +149,8 @@ func createWSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return net.Dial(network, remote.IP)
+			return interfacedialer.Dial("tcp", addr, "wlan0", nil)
+			// return net.Dial(network, remote.IP)
 		}
 	}
 

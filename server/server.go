@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"ladder"
+	"github.com/GaoMjun/ladder"
 
 	"github.com/GaoMjun/iptransparent"
 
