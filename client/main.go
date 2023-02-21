@@ -149,8 +149,11 @@ func createWSChannel(remote Remote, channels *ladder.Channels) {
 
 	if len(remote.IP) > 0 {
 		dialer.NetDial = func(network, addr string) (net.Conn, error) {
-			return interfacedialer.Dial("tcp", addr, "wlan0", nil)
-			// return net.Dial(network, remote.IP)
+			if len(remote.Ifname) > 0 {
+				return interfacedialer.Dial("tcp", remote.IP, remote.Ifname, nil)
+			} else {
+				return net.Dial(network, remote.IP)
+			}
 		}
 	}
 

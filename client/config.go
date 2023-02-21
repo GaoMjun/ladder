@@ -31,6 +31,7 @@ type Remote struct {
 	UpHost   string
 	UpIP     string
 	Ipv6     bool
+	Ifname   string
 }
 
 func NewConfigWithJsonString(jsonString string) (config Config, err error) {
